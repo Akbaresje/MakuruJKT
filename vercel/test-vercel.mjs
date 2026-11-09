@@ -6,7 +6,7 @@
  *
  * Needs a local Postgres. Default:
  *   postgres://makuru:makuru@127.0.0.1:5432/makuru
- * Override with POSTGRES_URL=...
+ * Override with DATABASE_URL=... (Neon, Vercel Postgres, Supabase, anything)
  *
  * Run: node vercel/test-vercel.mjs
  */
@@ -17,12 +17,13 @@ import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DB_URL = process.env.POSTGRES_URL || 'postgres://makuru:makuru@127.0.0.1:5432/makuru';
+const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || 'postgres://makuru:makuru@127.0.0.1:5432/makuru';
 const PORT = 8131;
 const BASE = `http://127.0.0.1:${PORT}`;
 const PIN = '5555';
 
 process.env.POSTGRES_URL = DB_URL;
+process.env.DATABASE_URL = DB_URL;
 process.env.MAKURU_PIN = PIN;
 delete process.env.MAKURU_SECRET;
 

@@ -15,18 +15,9 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
-// Load .env.local / .env (written by `neon deploy` / `neon env pull`) without
-// any dependency. Real env vars always win.
-for (const name of ['.env.local', '.env']) {
-  const file = path.join(HERE, name);
-  if (!fs.existsSync(file)) continue;
-  for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
-    const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/.exec(line);
-    if (!m) continue;
-    const value = m[2].replace(/^(['"])(.*)\1$/, '$2');
-    if (process.env[m[1]] === undefined) process.env[m[1]] = value;
-  }
-}
+// Load .env.local / .env (written by `neon deploy` / `neon env pull`).
+const { loadEnv } = await import(path.join(HERE, 'lib', 'load-env.mjs'));
+loadEnv(HERE);
 
 const PORT = Number(process.env.PORT || 8090);
 

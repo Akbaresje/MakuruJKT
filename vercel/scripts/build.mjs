@@ -21,6 +21,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = dirname(here);
 const workspace = dirname(root);
 
+// Pick up DATABASE_URL / MAKURU_PIN from .env.local, exactly like dev-server.
+const { loadEnv } = await import(join(root, 'lib', 'load-env.mjs'));
+const envFiles = loadEnv(root);
+
 const t = (label, ok, extra = '') =>
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}${extra ? '  ' + extra : ''}`);
 let failures = 0;
@@ -33,7 +37,8 @@ function warn(label, ok, extra) {
 }
 
 console.log(`\nmakuru build  ${new Date().toISOString()}`);
-console.log(`root: ${root}\n`);
+console.log(`root: ${root}`);
+console.log(`env:  ${envFiles.length ? envFiles.join(', ') : '(none loaded from .env*)'}\n`);
 
 /* 1. re-sync generated assets when the workspace is next to us */
 const syncPairs = [

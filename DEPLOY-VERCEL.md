@@ -40,7 +40,40 @@ Detailnya di bawah (≈15 menit).
    ```
 4. **Tidak perlu bikin tabel.** Server membuat tabel `makuru_state` sendiri saat request pertama.
 
-### 1B. Vercel Postgres (langsung dari dashboard Vercel)
+> ### Sudah tersambung: project `little-brook-24843381`
+> Setup Neon untuk repo ini **sudah dijalankan dan diuji** terhadap database sungguhan.
+>
+> | Item | Nilai |
+> | :--- | :--- |
+> | Organization | `org-divine-dawn-86048500` |
+> | Project | `little-brook-24843381` |
+> | Branch | `production` |
+> | Host (pooled) | `ep-wispy-moon-a7td2p0s-pooler.ap-southeast-2.aws.neon.tech` |
+> | Driver terpakai | `@neondatabase/serverless` (HTTP), otomatis untuk host `*.neon.tech` |
+> | Tabel | `makuru_state` — dibuat otomatis, satu baris `id = 1` |
+>
+> Yang perlu kamu isi **saat deploy ke Vercel** (Settings → Environment Variables):
+> ```
+> DATABASE_URL = postgresql://neondb_owner:<password>@ep-wispy-moon-a7td2p0s-pooler.ap-southeast-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+> MAKURU_PIN   = 4271
+> MAKURU_SECRET= <64 karakter hex acak>   # opsional, tapi disarankan
+> TOKEN_DAYS   = 30                       # opsional
+> ```
+> Nilai persisnya ada di `vercel/.env.local` di workspace ini (file itu **tidak** di-commit).
+>
+> **CLI Neon.** `neon init` sudah dijalankan (offline) → `vercel/.neon` menunjuk ke project di atas,
+> dan `neon.ts` mendeklarasikan service `postgres`. `neon deploy` **belum** bisa dijalankan karena
+> butuh `NEON_API_KEY` (`neon login` memakai callback ke `127.0.0.1` yang tidak bisa dijangkau dari
+> sandbox). Kalau nanti mau menjalankannya di komputermu:
+> ```bash
+> cd vercel
+> export NEON_API_KEY=neon_xxx     # console.neon.tech → Account settings → API keys
+> neon deploy -y                    # apply neon.ts + tulis .env.local
+> npm run build
+> node --env-file=.env.local scripts/verify-cloud.mjs
+> ```
+
+### 1B. Vercel Postgres### 1B. Vercel Postgres (langsung dari dashboard Vercel)
 1. Di project Vercel: tab **Storage** → **Create Database** → **Postgres** → region **Sydney** → Create.
 2. Vercel otomatis menambahkan env var `POSTGRES_URL` (dan beberapa varian lain) ke project.
 3. Kalau env var belum muncul, buka database → **Quickstart** → copy `POSTGRES_URL`.
@@ -161,6 +194,45 @@ vercel dev
 ```
 
 ---
+
+## Bukti dari database Neon yang sebenarnya
+
+Dijalankan terhadap project `little-brook-24843381`, branch `production`:
+
+```
+$ npm run build
+env:  DATABASE_URL, MAKURU_PIN, MAKURU_SECRET, TOKEN_DAYS
+PASS  storage driver  neon-http (ep-wispy-moon-a7td2p0s-pooler.ap-southeast-2.aws.neon.tech)
+PASS  MAKURU_PIN set  (hidden)
+build ok
+
+$ node --env-file=.env.local scripts/verify-cloud.mjs
+PASS  health responds  {"ok":true,"app":"makuru","mode":"cloud","version":0,...}
+PASS  storage driver  neon-http on ep-wispy-moon-...neon.tech
+PASS  wrong PIN rejected  HTTP 401
+PASS  PIN login returns a token  expires in 30 days
+PASS  write accepted  v0 -> v1
+PASS  product round-trips
+PASS  stale write rejected  HTTP 409
+PASS  data survives a process restart  version 1
+10 passed, 0 failed
+
+$ node --env-file=.env.local test-vercel.mjs
+PASS  second device sees the product from the shared database
+PASS  first device picks up the second device change
+PASS  Postgres holds both products (v5, 2 products)
+16 passed, 0 failed
+```
+
+Skema yang terbentuk otomatis di Neon:
+
+```
+id          smallint
+version     bigint
+created_at  timestamp with time zone
+updated_at  timestamp with time zone
+data        jsonb
+```
 
 ## Hasil tes yang sudah saya jalankan di workspace ini
 

@@ -27,3 +27,9 @@ vercel/shots-cloud/
 
 # npm cache / logs that npm writes when HOME is the workspace
 .npm/
+
+# home-directory caches (npm / playwright / XDG) that land in the workspace
+.cache/
+.config/
+.local/
+.npm/
