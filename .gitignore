@@ -33,3 +33,6 @@ vercel/shots-cloud/
 .config/
 .local/
 .npm/
+
+# chromium NSS store
+.pki/
