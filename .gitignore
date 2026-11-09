@@ -21,3 +21,6 @@ vercel/shots-cloud/
 # sandbox noise
 .config/
 .sudo_as_admin_successful
+
+# deploy key (lokal saja)
+.ssh/
