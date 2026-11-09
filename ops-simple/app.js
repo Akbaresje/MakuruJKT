@@ -30,7 +30,8 @@
   var cloud = {
     mode: 'local', token: '', status: 'local', err: '', busy: false,
     online: true, baseVersion: 0, baseData: null, dirty: false, saving: false,
-    pullTimer: 0, pushTimer: 0, retries: 0
+    pullTimer: 0, pushTimer: 0, retries: 0,
+    pinDraft: '', shake: false
   };
 
   function apiBase() {
@@ -207,6 +208,7 @@
       .catch(function (e) {
         cloud.busy = false;
         cloud.err = e.status === 401 ? 'Wrong PIN. Try again.' : (e.status === 429 ? 'Too many tries. Wait 10 minutes.' : 'Cannot reach the server.');
+        if (e.status === 401) { cloud.shake = true; cloud.pinDraft = ''; }
         render();
       });
   }
@@ -349,7 +351,11 @@
       root.innerHTML = loginScreen();
       document.title = 'Sign in - makuru.';
       var pinInput = root.querySelector('input[name=pin]');
-      if (pinInput) setTimeout(function () { pinInput.focus(); }, 60);
+      if (pinInput) {
+        pinInput.focus({ preventScroll: true });
+        var n = pinInput.value.length;
+        try { pinInput.setSelectionRange(n, n); } catch (e) {}
+      }
       return;
     }
     var from = root.querySelector('.gateway') ? 'gateway' : (root.querySelector('.app') ? 'app' : '');
@@ -459,13 +465,17 @@
       '<button class="btn btn--primary btn--lg" data-act="enter">Enter ' + icon('send', 18) + '</button></div>';
   }
   function loginScreen() {
+    var shake = cloud.shake ? ' is-shake' : '';
+    cloud.shake = false;
     return '<div class="gateway gateway--login"><div class="gateway-logo">' + logoHTML() + '</div>' +
-      '<form class="login-card" id="f-login" autocomplete="on">' +
+      '<form class="login-card' + shake + '" id="f-login" autocomplete="on">' +
       '<div class="login-icon">' + icon('lock', 18) + '</div>' +
       '<h1 class="login-title">Sign in</h1>' +
       '<p class="login-sub">Type the shop PIN. The same PIN works on every device.</p>' +
-      '<input class="input login-pin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN" aria-label="PIN">' +
-      (cloud.err ? '<div class="login-err">' + esc(cloud.err) + '</div>' : '') +
+      '<input class="input login-pin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" ' +
+      'placeholder="PIN" aria-label="PIN" value="' + esc(cloud.pinDraft || '') + '">' +
+      '<div class="login-msg' + (cloud.err ? ' is-on' : '') + '" role="status" aria-live="polite">' +
+      (cloud.err ? esc(cloud.err) : '') + '</div>' +
       '<button class="btn btn--primary login-btn" type="submit" data-act="login"' + (cloud.busy ? ' disabled' : '') + '>' +
       (cloud.busy ? 'Checking...' : 'Sign in') + '</button>' +
       '</form></div>';
@@ -871,7 +881,10 @@
     var btn = e.target.querySelector('button[type="submit"][data-act]'); if (!btn) return;
     try { ACT[btn.getAttribute('data-act')](btn, e.target); } catch (err) { if (err.message !== 'stop') console.error(err); }
   });
-  document.addEventListener('input', function (e) { if (e.target.closest('#f-order')) updateOrderTotal(); });
+  document.addEventListener('input', function (e) {
+    if (e.target.closest('#f-order')) updateOrderTotal();
+    if (e.target.matches && e.target.matches('#f-login input[name=pin]')) cloud.pinDraft = e.target.value;
+  });
   document.addEventListener('change', function (e) { if (e.target.closest('#f-order')) updateOrderTotal(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
   window.addEventListener('hashchange', function () { closeModal(); render(true); window.scrollTo(0, 0); });

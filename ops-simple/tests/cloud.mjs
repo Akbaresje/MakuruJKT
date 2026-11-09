@@ -87,7 +87,7 @@ ok(!(await A.page.$('.gateway [data-act="enter"]')), 'the app is not reachable b
 await A.page.screenshot({ path: 'shots-cloud/c01-login.png' });
 
 await signIn(A.page, '0000');
-ok(/Wrong PIN/.test(await A.page.textContent('.login-err').catch(() => '')), 'wrong PIN shows an error');
+ok(/Wrong PIN/.test(await A.page.textContent('.login-msg').catch(() => '')), 'wrong PIN shows an error');
 
 await signIn(A.page);
 ok(!!(await A.page.$('.gateway [data-act="enter"]')), 'correct PIN opens the app');
