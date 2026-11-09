@@ -24,3 +24,6 @@ vercel/shots-cloud/
 
 # deploy key (lokal saja)
 .ssh/
+
+# npm cache / logs that npm writes when HOME is the workspace
+.npm/
