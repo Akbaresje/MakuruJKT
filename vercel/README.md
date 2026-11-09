@@ -195,6 +195,23 @@ vercel dev
 
 ---
 
+## Sudah live di Vercel
+
+| | |
+| :--- | :--- |
+| **URL** | <https://makuru-seven.vercel.app> |
+| **PIN** | `2811` |
+| Project | `makuru` (`prj_PQEElirNYEHHLIhVrWVHpgeTTB0T`) |
+| Node runtime | `22.x` |
+| Env vars | `DATABASE_URL`, `MAKURU_PIN`, `MAKURU_SECRET`, `TOKEN_DAYS` — production + preview + development |
+| Deploy ulang | `VERCEL_TOKEN=xxx ./deploy-vercel.sh` dari root repo, atau `vercel --prod` di folder `vercel/` |
+
+Catatan teknis yang bikin deploy pertama gagal, kalau nanti bikin project baru:
+
+- `vercel.json` perlu `"outputDirectory": "."`. Tanpa itu Vercel zero-config melihat script
+  `build` dan mencari folder `public/` → `Error: No Output Directory named "public" found`.
+- Pin Node lewat `PATCH /v9/projects/<name>` `{"nodeVersion":"22.x"}`; default-nya sudah 26.x.
+
 ## Bukti dari database Neon yang sebenarnya
 
 Dijalankan terhadap project `little-brook-24843381`, branch `production`:
