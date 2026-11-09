@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>makuru. — preview maskot</title>
+<style>
+/*__FONTS__*/
+/*__MASCOT_CSS__*/
+
+/* ---------- preview chrome ---------- */
+:root{
+  --bg:#FAF5EB; --alt:#F3EBDD; --surface:#FFF; --red:#9E2A2B; --red-dark:#832223; --red-soft:#F6E6E3;
+  --ink:#241E1E; --muted:#736B66; --gold:#DDA15E; --line:rgba(36,30,30,.08);
+  --display:'Fraunces',Georgia,serif; --body:'Plus Jakarta Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--alt);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1060px;margin:0 auto;padding:26px 20px 80px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;background:var(--surface);border:1px solid var(--line);border-radius:18px;margin-bottom:22px}
+.top .brand{font-family:var(--display);font-weight:900;font-size:26px;letter-spacing:-.04em;color:var(--red);line-height:1}
+.top .chip{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:9999px;background:var(--red-soft);color:var(--red);font-weight:700;font-size:12px;letter-spacing:.02em}
+
+h1{font-family:var(--display);font-weight:900;font-size:clamp(28px,4vw,40px);letter-spacing:-.035em;line-height:1.1;margin:0 0 10px}
+.lead{margin:0 0 26px;color:var(--muted);max-width:70ch}
+.lead b{color:var(--ink);font-weight:700}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:18px;margin-bottom:20px}
+.card h2{font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:-.02em;margin:0 0 4px}
+.card p.sub{margin:0 0 14px;color:var(--muted);font-size:13.5px}
+
+/* ---------- landing mock ---------- */
+.stage{position:relative;height:min(58vh,420px);border-radius:18px;overflow:hidden;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center}
+.stage .halo{position:absolute;top:50%;left:50%;width:min(70%,540px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 50% 50%,rgba(221,161,94,.13),rgba(221,161,94,.05) 40%,rgba(221,161,94,0) 70%)}
+.wordmark{position:relative;font-family:var(--display);font-weight:900;font-size:clamp(34px,5.2vw,52px);letter-spacing:-.045em;line-height:1;color:var(--red);text-align:center;user-select:none}
+.wordmark .rule{display:block;height:2px;margin:13px auto 0;width:calc(100% - 10px);border-radius:2px;
+  background:linear-gradient(90deg,rgba(221,161,94,0),var(--gold) 14%,var(--red) 62%,var(--red) 100%);opacity:.62}
+.enterbtn{margin-top:22px;display:inline-flex;align-items:center;gap:9px;padding:14px 24px;border:0;border-radius:9999px;background:var(--red);color:#fff;
+  font-family:var(--body);font-weight:700;font-size:15px;cursor:pointer;transition:background .18s,transform .25s cubic-bezier(.2,.8,.25,1),box-shadow .25s}
+.enterbtn:hover{background:var(--red-dark);transform:translateY(-2px);box-shadow:0 10px 22px rgba(158,42,43,.28)}
+.enterbtn:active{transform:translateY(0) scale(.97)}
+.enterbtn svg{transition:transform .25s}
+.enterbtn:hover svg{transform:translateX(3px)}
+.stage-center{display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
+.corner{position:absolute;right:20px;bottom:18px;z-index:2}
+.stage-tag{position:absolute;left:14px;top:12px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(115,107,102,.75)}
+
+/* ---------- options ---------- */
+.options{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.opt{border:1.5px solid var(--line);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,box-shadow .2s,transform .2s;background:var(--surface)}
+.opt:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(36,30,30,.07)}
+.opt.sel{border-color:var(--red);box-shadow:0 0 0 3px rgba(158,42,43,.12)}
+.opt h3{margin:0;font-size:14.5px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.opt h3 .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;background:var(--red-soft);color:var(--red);font-size:12px;font-weight:800}
+.opt p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.45}
+.mini{position:relative;height:150px;border-radius:13px;background:var(--bg);border:1px solid var(--line);overflow:hidden;display:grid;place-items:center}
+.mini--corner{display:block}
+.mini--corner .corner{right:10px;bottom:8px}
+.mini--hero{display:flex;align-items:center;justify-content:center;gap:10px;padding:0 6px}
+.mini--hero .wordmark{font-size:24px;margin-bottom:0}
+.mini--hero .wordmark .rule{margin-top:6px}
+.mini--side{display:block;padding:8px}
+.sidebox{height:100%;width:118px;background:var(--surface);border-radius:10px;border:1px solid var(--line);padding:9px 8px;display:flex;flex-direction:column;gap:6px}
+.sidebox .sb-brand{font-family:var(--display);font-weight:900;font-size:15px;color:var(--red);letter-spacing:-.04em;margin-bottom:2px}
+.sidebox .sb-row{height:9px;border-radius:4px;background:var(--alt)}
+.sidebox .sb-row.on{background:var(--red-soft)}
+.sidebox .sb-foot{margin-top:auto;display:flex;justify-content:center}
+.pick{border:1px solid var(--line);background:var(--surface);border-radius:9999px;padding:8px 12px;font:inherit;font-weight:700;font-size:12.5px;color:var(--ink);cursor:pointer;transition:background .18s,transform .2s,color .18s,border-color .18s}
+.pick:hover{background:var(--alt);transform:translateY(-1px)}
+.opt.sel .pick{background:var(--red);border-color:var(--red);color:#fff}
+.pick:active{transform:scale(.97)}
+
+/* ---------- knobs ---------- */
+.knobs{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start}
+.switches{display:flex;flex-wrap:wrap;gap:9px}
+.sw{display:inline-flex;align-items:center;gap:9px;padding:9px 13px;border-radius:9999px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:13px;font-weight:600;transition:background .18s,border-color .18s,transform .18s;user-select:none}
+.sw:hover{transform:translateY(-1px);background:#fff;box-shadow:0 6px 14px rgba(36,30,30,.06)}
+.sw input{position:absolute;width:1px;height:1px;margin:0;opacity:0;pointer-events:none}
+.sw .dot{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(36,30,30,.22);display:grid;place-items:center;transition:.18s;pointer-events:none}
+.sw .dot::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--red);transform:scale(0);transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.sw input:checked + .dot{border-color:var(--red);background:var(--red-soft)}
+.sw input:checked + .dot::after{transform:scale(1)}
+.sw input:checked ~ span{color:var(--ink)}
+.sizes{display:flex;gap:8px;margin-top:12px}
+.sizes button{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 0;font:inherit;font-weight:700;font-size:13px;cursor:pointer;transition:.18s}
+.sizes button:hover{background:var(--alt)}
+.sizes button.on{background:var(--red);border-color:var(--red);color:#fff}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.act{border:1px solid var(--line);background:var(--surface);border-radius:9999px;padding:9px 14px;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer;transition:.18s}
+.act:hover{background:var(--alt);transform:translateY(-1px)}
+.act.primary{background:var(--red);border-color:var(--red);color:#fff}
+.act.primary:hover{background:var(--red-dark)}
+.hint{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+.summary{margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--alt);font-size:13.5px;font-weight:600}
+.summary b{color:var(--red)}
+
+.notes{margin:0;padding-left:18px;color:var(--muted);font-size:13.5px}
+.notes li{margin:6px 0}
+.notes b{color:var(--ink)}
+.swatch{display:inline-flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.swatch i{width:16px;height:16px;border-radius:5px;display:inline-block;border:1px solid rgba(36,30,30,.08)}
+
+@media (max-width:860px){
+  .options{grid-template-columns:1fr}
+  .knobs{grid-template-columns:1fr}
+  .stage{height:min(52vh,340px)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">makuru.</div>
+    <div class="chip">PREVIEW — app belum diubah</div>
+  </div>
+
+  <h1>Kartun maskot buat makuru.</h1>
+  <p class="lead">Ini file percobaan saja. <b>makuru-ops.html tidak saya sentuh.</b> Gerakkan mouse di area di bawah — matanya ngikutin, kedip sendiri, uapnya naik. Klik maskotnya buat lihat reaksinya. Pilih penempatan favoritmu di bagian bawah, nanti saya pasang yang itu.</p>
+
+  <section class="card">
+    <h2>A. Coba di landing page</h2>
+    <p class="sub">Versi kode kamu: maskot kecil di pojok kanan bawah, 120px.</p>
+    <div class="stage" id="stageA">
+      <span class="stage-tag">landing page</span>
+      <div class="halo"></div>
+      <div class="stage-center">
+        <div class="wordmark">makuru.<span class="rule"></span></div>
+        <button class="enterbtn" id="fakeEnter">Enter
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="corner" id="cornerHost"></div>
+    </div>
+    <div class="actions" style="margin-top:14px">
+      <button class="act primary" id="tHop">Lompat</button>
+      <button class="act" id="tBlink">Kedip</button>
+      <button class="act" id="tWave">Lambaikan tangan</button>
+      <button class="act" id="tSay">Sapa</button>
+      <button class="act" id="tWiggle">Goyang</button>
+      <button class="act" id="tFixed">Pasang di pojok layar ini</button>
+    </div>
+    <p class="hint">Tombol <b>Enter</b> palsu di atas: kalau diklik, maskotnya ikut melompat (contoh reaksi saat orang masuk).</p>
+  </section>
+
+  <section class="card">
+    <h2>B. Pilih penempatan</h2>
+    <p class="sub">Tiga gaya yang saya siapkan. Klik salah satu.</p>
+    <div class="options">
+      <div class="opt sel" data-pick="A">
+        <div class="mini mini--corner" data-mount="A"><div class="corner" data-a-host></div></div>
+        <h3><span class="num">A</span> Pojok kanan bawah</h3>
+        <p>Selalu ada di semua halaman, ukuran kecil 120px. Seperti kode kamu sekarang.</p>
+        <button class="pick" data-pick-btn="A">Pilih ini</button>
+      </div>
+      <div class="opt" data-pick="B">
+        <div class="mini mini--hero" data-mount="B">
+          <div class="wordmark">makuru.<span class="rule"></span></div>
+        </div>
+        <h3><span class="num">B</span> Di samping tulisan</h3>
+        <p>Berdiri di sebelah wordmark di landing page saja. Lebih berani, langsung kelihatan.</p>
+        <button class="pick" data-pick-btn="B">Pilih ini</button>
+      </div>
+      <div class="opt" data-pick="C">
+        <div class="mini mini--side" data-mount="C">
+          <div class="sidebox">
+            <div class="sb-brand">makuru.</div>
+            <div class="sb-row on"></div><div class="sb-row"></div><div class="sb-row"></div><div class="sb-row"></div>
+            <div class="sb-foot"></div>
+          </div>
+        </div>
+        <h3><span class="num">C</span> Di sidebar</h3>
+        <p>Kecil 64px di bawah menu, atas "Base Kitchen". Tenang, tidak menutupi apa pun.</p>
+        <button class="pick" data-pick-btn="C">Pilih ini</button>
+      </div>
+    </div>
+    <div class="summary" id="summary">Pilihan kamu: <b>A — pojok kanan bawah</b>.</div>
+  </section>
+
+  <section class="card">
+    <h2>C. Atur perilakunya</h2>
+    <p class="sub">Semua tombol di sini langsung mengubah maskot di halaman ini.</p>
+    <div class="knobs">
+      <div>
+        <div class="switches" id="switches">
+          <label class="sw"><input type="checkbox" data-knob="follow" checked><i class="dot"></i><span>Mata ikut kursor</span></label>
+          <label class="sw"><input type="checkbox" data-knob="blink" checked><i class="dot"></i><span>Kedip acak</span></label>
+          <label class="sw"><input type="checkbox" data-knob="steam" checked><i class="dot"></i><span>Uap naik</span></label>
+          <label class="sw"><input type="checkbox" data-knob="bob" checked><i class="dot"></i><span>Napas pelan</span></label>
+          <label class="sw"><input type="checkbox" data-knob="react" checked><i class="dot"></i><span>Reaksi saat diklik</span></label>
+        </div>
+        <div class="sizes" id="sizes">
+          <button data-size="96">96 px</button>
+          <button data-size="120" class="on">120 px</button>
+          <button data-size="144">144 px</button>
+        </div>
+        <p class="hint">Coba matikan satu-satu buat lihat bedanya. Di HP otomatis jadi 88px.</p>
+      </div>
+      <div>
+        <h3 style="margin:0 0 6px;font-size:14px">Catatan teknis</h3>
+        <ul class="notes">
+          <li>Semua gerak pakai <b>satu loop</b> rAF + CSS, jadi ringan (tidak ada library).</li>
+          <li>Bug di kode asli sudah saya betulkan: klik <b>squash</b> dulu ketimpa sama loop mata, sekarang tidak.</li>
+          <li>Kedipnya <b>acak</b> 2,4–5,6 detik, kadang kedip dua kali.</li>
+          <li>Kalau mouse diam &gt; 2,6 detik, matanya <b>jalan sendiri</b>.</li>
+          <li>Hormati <b>reduced motion</b>: semua gerak berhenti, maskot tetap ada.</li>
+          <li>Warna cuma dari brand:
+            <span class="swatch"><i style="background:#9E2A2B"></i><i style="background:#FAF5EB"></i><i style="background:#DDA15E"></i><i style="background:#241E1E"></i></span>
+          </li>
+          <li>Tanpa emoji, tanpa file gambar — semuanya SVG inline.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>D. Kalau kamu setuju</h2>
+    <p class="sub">Rencana saya saat masukin ke app.</p>
+    <ul class="notes">
+      <li>File baru <b>ops-simple/mascot/</b> (CSS + JS), di-inline saat build — tetap <b>satu file HTML</b>.</li>
+      <li>Muncul di landing page + semua halaman app. Otomatis <b>sembunyi saat modal terbuka</b> supaya tidak menutupi tombol Delete.</li>
+      <li>Di HP: 88px, geser ke atas sedikit supaya tidak kena toast di bawah.</li>
+      <li>Sekali-kali saja dia ngomong (misal setelah simpan order): "Order saved." — pakai bahasa Inggris simpel, sama seperti UI.</li>
+      <li>Tombol "Pasang di pojok layar ini" di atas cuma buat tes di halaman preview ini.</li>
+    </ul>
+    <div class="actions" style="margin-top:14px">
+      <button class="act primary" id="okA">Oke, pakai penempatan A</button>
+      <button class="act" id="okB">Oke, pakai penempatan B</button>
+      <button class="act" id="okC">Oke, pakai penempatan C</button>
+    </div>
+    <p class="hint" id="okNote">Memilih di sini cuma menandai pilihanmu di halaman ini — belum ada yang saya ubah di file app.</p>
+  </section>
+
+</div>
+
+<script>
+/*__MASCOT_JS__*/
+</script>
+<script>
+(function () {
+  var state = { pick: 'A', size: 120, follow: true, blink: true, steam: true, bob: true, react: true };
+  var herd = [];
+
+  function sizesFor(where) {
+    if (where === 'A-mini') return Math.round(state.size * 0.47);
+    if (where === 'B') return Math.round(state.size * 0.8);
+    if (where === 'C') return 64;
+    return state.size;
+  }
+  function opts(where) {
+    return {
+      size: sizesFor(where), follow: state.follow, blink: state.blink,
+      steam: state.steam, bob: state.bob, react: state.react
+    };
+  }
+
+  /* main stage mascot (placement A) */
+  var main = MakuruMascot.create(document.getElementById('cornerHost'), opts('A'));
+  herd.push({ mk: main, where: 'A' });
+
+  /* the three mini previews */
+  var aMiniHost = document.querySelector('[data-a-host]');
+  var aMini = MakuruMascot.create(aMiniHost, { size: 56, follow: false, react: true, blink: true, steam: true });
+  herd.push({ mk: aMini, where: 'A-mini' });
+
+  var bHost = document.querySelector('[data-mount="B"]');
+  var bMk = MakuruMascot.create(bHost, opts('B'));
+  herd.push({ mk: bMk, where: 'B' });
+
+  var cHost = document.querySelector('[data-mount="C"] .sb-foot');
+  var cMk = MakuruMascot.create(cHost, opts('C'));
+  herd.push({ mk: cMk, where: 'C' });
+
+  /* slider of sizes + switches */
+  function applyAll() {
+    herd.forEach(function (h) { h.mk.apply(opts(h.where)); });
+  }
+  document.querySelectorAll('[data-knob]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      state[input.getAttribute('data-knob')] = input.checked;
+      applyAll();
+      if (input.getAttribute('data-knob') === 'react' && input.checked) main.hop();
+    });
+  });
+  document.querySelectorAll('#sizes button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#sizes button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      state.size = +b.getAttribute('data-size');
+      applyAll();
+    });
+  });
+
+  /* demo actions */
+  document.getElementById('tHop').onclick = function () { main.hop(); };
+  document.getElementById('tBlink').onclick = function () { main.blink(); };
+  document.getElementById('tWave').onclick = function () { main.wave(); };
+  document.getElementById('tWiggle').onclick = function () { main.wiggle(); };
+  document.getElementById('tSay').onclick = function () { main.say('Hi! Ready to sell?', 2400); };
+
+  document.getElementById('fakeEnter').onclick = function () {
+    main.hop();
+    main.say('Let\'s go.', 1600);
+  };
+
+  /* mount a real fixed mascot on this preview page */
+  var fixedMk = null;
+  document.getElementById('tFixed').onclick = function () {
+    if (fixedMk) { fixedMk.destroy(); fixedMk = null; this.textContent = 'Pasang di pojok layar ini'; return; }
+    var o = opts('A'); o.fixed = true;
+    fixedMk = MakuruMascot.create(document.body, o);
+    fixedMk.say('Hi!', 1800);
+    this.textContent = 'Lepas maskot pojok';
+  };
+
+  /* placement picker */
+  var names = { A: 'A — pojok kanan bawah', B: 'B — di samping tulisan', C: 'C — di sidebar' };
+  var notes = {
+    A: 'Selalu ada di semua halaman, ukuran kecil 120px. Seperti kode kamu sekarang.',
+    B: 'Berdiri di sebelah wordmark di landing page saja. Lebih berani, langsung kelihatan.',
+    C: 'Kecil 64px di bawah menu, atas "Base Kitchen". Tenang, tidak menutupi apa pun.'
+  };
+  function pick(k) {
+    state.pick = k;
+    document.querySelectorAll('.opt').forEach(function (o) { o.classList.toggle('sel', o.getAttribute('data-pick') === k); });
+    document.getElementById('summary').innerHTML = 'Pilihan kamu: <b>' + names[k] + '</b>.';
+    document.getElementById('okNote').textContent = 'Kamu pilih ' + k + '. Bilang "pakai ' + k + '" ke saya, nanti saya pasang persis seperti itu di makuru-ops.html.';
+    var mk = { A: main, B: bMk, C: cMk }[k];
+    mk.wave();
+  }
+  document.querySelectorAll('[data-pick-btn]').forEach(function (b) {
+    b.addEventListener('click', function () { pick(b.getAttribute('data-pick-btn')); });
+  });
+  document.getElementById('okA').onclick = function () { pick('A'); };
+  document.getElementById('okB').onclick = function () { pick('B'); };
+  document.getElementById('okC').onclick = function () { pick('C'); };
+
+  /* first hello on the main stage */
+  setTimeout(function () { main.say('Hi! Hungry?', 2200); }, 1400);
+})();
+</script>
+</body>
+</html>

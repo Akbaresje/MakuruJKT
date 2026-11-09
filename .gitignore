@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# secrets — never commit these
+.env
+.env.local
+.env.*.local
+server/data/
+vercel/.env.local
+vercel/.env
+
+# screenshots (QA output, regenerate with the test scripts)
+shots/
+shots-*/
+vercel/shots-cloud/
+
+# build artifacts
+*.zip
+.DS_Store
+
+# sandbox noise
+.config/
+.sudo_as_admin_successful

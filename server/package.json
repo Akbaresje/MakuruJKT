@@ -1,0 +1,12 @@
+{
+  "name": "makuru-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "makuru. — tiny sync server for dimsum stock and orders",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "MAKURU_PIN=1234 DATA_DIR=./.devdata node server.mjs"
+  }
+}

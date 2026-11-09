@@ -1,0 +1,204 @@
+/* ============================================================
+   makuru. mascot — cartoon dimsum bun buddy
+   One component, three placements. All motion is CSS + one rAF loop.
+   ============================================================ */
+
+.mk {
+  position: relative;
+  width: min(var(--mk-size, 120px), var(--mk-max, 2000px));
+  height: min(var(--mk-size, 120px), var(--mk-max, 2000px));
+  pointer-events: none;
+  --mk-red: #9E2A2B;
+  --mk-cream: #FAF5EB;
+  --mk-ink: #241E1E;
+  --mk-gold: #DDA15E;
+}
+.mk--inline { position: relative; display: inline-block; }
+.mk--fixed { position: fixed; right: 22px; bottom: 22px; z-index: 55; display: block; }
+
+.mk svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+/* clickable layer only — the rest of the box never eats clicks */
+.mk-hit {
+  position: absolute;
+  inset: 6% 10% 0 10%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.mk-hit:focus-visible { outline: 2px solid var(--mk-red); outline-offset: 4px; border-radius: 50%; }
+
+/* ---------- layers ---------- */
+.mk-hop, .mk-tilt, .mk-bob, .mk-squash { width: 100%; height: 100%; }
+.mk-hop { will-change: transform; }
+.mk-tilt { will-change: transform; }
+.mk-bob { transform-origin: 50% 94%; animation: mkBob 4.8s ease-in-out infinite; }
+.mk-squash { transform-origin: 50% 94%; transition: transform .46s cubic-bezier(.34, 1.56, .64, 1); }
+
+@keyframes mkBob {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(-5px) scale(.995, 1.005); }
+}
+
+/* soft shadow on the floor, breathing opposite to the bob */
+.mk-shadow {
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  bottom: 1%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(36, 30, 30, .17), rgba(36, 30, 30, 0) 72%);
+  animation: mkShadow 4.8s ease-in-out infinite;
+}
+@keyframes mkShadow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(.9); opacity: .72; }
+}
+
+/* ---------- the bun ---------- */
+.mk-body { fill: #FFFFFF; stroke: var(--mk-red); stroke-width: 5.5; }
+.mk-feet path, .mk-arm path {
+  fill: var(--mk-cream);
+  stroke: var(--mk-red);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mk-arm { transform-box: view-box; }
+.mk-arm--l { transform-origin: 42px 126px; }
+.mk-arm--r { transform-origin: 158px 126px; }
+
+.mk-crown path { stroke: var(--mk-red); stroke-linecap: round; }
+.mk-topknot { fill: var(--mk-cream); stroke-width: 4.5; }
+.mk-pleat { fill: none; stroke-width: 4; }
+
+.mk-blush { fill: var(--mk-red); opacity: .22; }
+
+/* eyes ------------------------------------------------------ */
+.mk-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform .11s ease;
+}
+.mk-eye-white { fill: #FFFFFF; stroke: var(--mk-red); stroke-width: 3.5; }
+.mk-pupil circle { fill: var(--mk-red); }
+.mk-glint { fill: #FFFFFF; }
+
+.mk.is-blink .mk-eye { transform: scaleY(.06); }
+.mk.is-blink .mk-pupil { opacity: 0; }
+.mk.is-happy .mk-eye { transform: scaleY(.42); }
+.mk.is-happy .mk-pupil { opacity: .9; }
+
+/* mouth ----------------------------------------------------- */
+.mk-mouth, .mk-mouth-happy {
+  fill: var(--mk-red);
+  stroke: var(--mk-red);
+  stroke-width: 3;
+  transition: opacity .16s ease;
+}
+.mk-mouth-happy { opacity: 0; }
+.mk.is-happy .mk-mouth { opacity: 0; }
+.mk.is-happy .mk-mouth-happy { opacity: 1; }
+
+/* steam ----------------------------------------------------- */
+.mk-puff {
+  stroke: var(--mk-red);
+  stroke-linecap: round;
+  fill: none;
+  opacity: 0;
+  animation: mkSteam 3.6s ease-out infinite;
+}
+.mk-puff--b { animation-duration: 4.2s; animation-delay: 1.5s; stroke-width: 2; }
+@keyframes mkSteam {
+  0% { opacity: 0; transform: translateY(8px) scale(.65); }
+  22% { opacity: .42; }
+  70% { opacity: .18; }
+  100% { opacity: 0; transform: translateY(-24px) scale(1.15); }
+}
+
+/* ---------- one-shot moves ---------- */
+.mk.is-squash .mk-squash { transform: scale(1.18, .82) translateY(4px); }
+.mk.is-hop .mk-hop { animation: mkHop .62s cubic-bezier(.3, .9, .3, 1); }
+@keyframes mkHop {
+  0% { transform: translateY(0) scale(1, 1); }
+  18% { transform: translateY(0) scale(1.08, .92); }
+  46% { transform: translateY(-22px) scale(.96, 1.04); }
+  72% { transform: translateY(0) scale(1.06, .94); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+.mk.is-wave .mk-arm--r { animation: mkWave .62s ease-in-out 3; }
+@keyframes mkWave {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-34deg); }
+  65% { transform: rotate(-10deg); }
+}
+.mk.is-wiggle .mk-tilt { animation: mkWiggle .7s ease-in-out; }
+@keyframes mkWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-4deg); }
+  45% { transform: rotate(4deg); }
+  72% { transform: rotate(-2deg); }
+}
+
+/* ---------- speech bubble ---------- */
+.mk-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 2px);
+  transform: translate(calc(-50% + var(--shift, 0px)), 8px) scale(.9);
+  transform-origin: 50% 100%;
+  opacity: 0;
+  padding: 8px 13px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(36, 30, 30, .10);
+  background: #FFFFFF;
+  color: var(--mk-ink);
+  font-family: var(--body, system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -.005em;
+  white-space: nowrap;
+  box-shadow: 0 12px 26px rgba(36, 30, 30, .12);
+  transition: opacity .26s ease, transform .32s cubic-bezier(.34, 1.56, .64, 1);
+  pointer-events: none;
+}
+.mk-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  background: #FFFFFF;
+  border-right: 1.5px solid rgba(36, 30, 30, .10);
+  border-bottom: 1.5px solid rgba(36, 30, 30, .10);
+  border-radius: 0 0 3px 0;
+  transform: rotate(45deg);
+}
+.mk.is-talking .mk-bubble { opacity: 1; transform: translate(calc(-50% + var(--shift, 0px)), 0) scale(1); }
+
+/* ---------- switches ---------- */
+.mk.no-steam .mk-puff { display: none; }
+.mk.no-bob .mk-bob,
+.mk.no-bob .mk-shadow { animation: none; }
+.mk.no-blink .mk-eye { transition: none; }
+
+/* ---------- small screens ---------- */
+@media (max-width: 720px) {
+  /* stays small on phones even if a size was set inline */
+  .mk--fixed { right: 14px; bottom: 16px; --mk-max: 88px; }
+}
+
+/* ---------- reduced motion: calm, still cute ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .mk-bob, .mk-shadow, .mk-puff, .mk-hop, .mk-tilt, .mk-squash { animation: none !important; transition: none !important; }
+  .mk-puff { opacity: .18; }
+  .mk-squash { transform: none !important; }
+}
