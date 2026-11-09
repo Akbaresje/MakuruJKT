@@ -55,7 +55,7 @@ Detailnya di bawah (≈15 menit).
 > Yang perlu kamu isi **saat deploy ke Vercel** (Settings → Environment Variables):
 > ```
 > DATABASE_URL = postgresql://neondb_owner:<password>@ep-wispy-moon-a7td2p0s-pooler.ap-southeast-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-> MAKURU_PIN   = 4271
+> MAKURU_PIN   = 2811
 > MAKURU_SECRET= <64 karakter hex acak>   # opsional, tapi disarankan
 > TOKEN_DAYS   = 30                       # opsional
 > ```
@@ -128,7 +128,7 @@ Vercel → project → **Settings** → **Environment Variables** → tambah dua
 
 | Nama | Nilai | Wajib |
 | :--- | :--- | :--- |
-| `MAKURU_PIN` | PIN pilihanmu, contoh `4271` | ya |
+| `MAKURU_PIN` | PIN pilihanmu, contoh `2811` | ya |
 | `POSTGRES_URL` | connection string dari Langkah 1 | ya |
 | `MAKURU_SECRET` | string acak panjang, contoh hasil `openssl rand -hex 32` | opsional |
 | `TOKEN_DAYS` | `30` (default) | opsional |
