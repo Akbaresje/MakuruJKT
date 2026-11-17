@@ -85,6 +85,50 @@ svg{display:block;flex:none}
 .app.page-enter .stat:nth-child(4),.app.is-entering .stat:nth-child(4){animation-delay:.32s}
 @keyframes riseIn{from{opacity:0;transform:translateY(14px) scale(.996)}to{opacity:1;transform:none}}
 
+/* ---------- sign in -> main page: one continuous unlock ---------- */
+/* 1. the card lifts, blurs and dissolves upward */
+.login-card.is-unlocking{animation:cardUnlock .54s cubic-bezier(.4,.06,.2,1) both}
+@keyframes cardUnlock{
+  0%{opacity:1;transform:none;filter:blur(0)}
+  30%{opacity:1;transform:translateY(-7px) scale(1.012);filter:blur(0)}
+  100%{opacity:0;transform:translateY(-30px) scale(1.075);filter:blur(10px)}
+}
+.gateway-logo.is-unlocking{animation:logoLift .54s cubic-bezier(.4,.06,.2,1) both}
+@keyframes logoLift{to{opacity:0;transform:translateY(-18px) scale(.97);filter:blur(5px)}}
+
+/* 2. a bloom of warm light carries the eye across the page swap */
+.unlock-veil{position:fixed;inset:0;z-index:80;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 50% 54%,
+    rgba(255,255,255,.97) 0%,
+    rgba(250,240,235,.80) 22%,
+    rgba(246,230,227,.40) 40%,
+    rgba(250,245,235,0) 66%);
+  animation:veilBloom 1.25s .40s cubic-bezier(.2,.8,.25,1) both}
+@keyframes veilBloom{
+  0%{opacity:0;transform:scale(.60)}
+  26%{opacity:1;transform:scale(1.02)}
+  62%{opacity:.45;transform:scale(1.4)}
+  100%{opacity:0;transform:scale(1.9)}
+}
+
+/* 3. the app rises out of that light, sidebar first, then the page content */
+.app.is-unlock-in .sidebar{animation:sideIn .64s .04s cubic-bezier(.16,.84,.3,1) both}
+@keyframes sideIn{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+.app.is-unlock-in .nav{animation:navIn .5s cubic-bezier(.2,.8,.25,1) both;
+  animation-delay:calc(.10s + var(--i, 0) * .05s)}
+@keyframes navIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.app.is-unlock-in .main{animation:mainRise .72s .05s cubic-bezier(.16,.84,.3,1) both}
+@keyframes mainRise{from{opacity:0;transform:translateY(26px) scale(.99)}to{opacity:1;transform:none}}
+.app.is-unlock-in .page-head{animation:headIn .58s .18s cubic-bezier(.2,.8,.25,1) both}
+@keyframes headIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.app.is-unlock-in .stat{animation:statPop .58s cubic-bezier(.16,.84,.3,1) both}
+.app.is-unlock-in .stat:nth-child(1){animation-delay:.24s}
+.app.is-unlock-in .stat:nth-child(2){animation-delay:.29s}
+.app.is-unlock-in .stat:nth-child(3){animation-delay:.34s}
+.app.is-unlock-in .stat:nth-child(4){animation-delay:.39s}
+@keyframes statPop{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+.app.is-unlock-in .panel{animation:riseIn .6s .44s cubic-bezier(.2,.8,.25,1) both}
+
 /* shell */
 .app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
 .sidebar{background:var(--surface);border-right:1px solid var(--line);padding:22px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}

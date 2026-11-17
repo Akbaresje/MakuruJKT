@@ -31,7 +31,7 @@
     mode: 'local', token: '', status: 'local', err: '', busy: false,
     online: true, baseVersion: 0, baseData: null, dirty: false, saving: false,
     pullTimer: 0, pushTimer: 0, retries: 0,
-    pinDraft: '', shake: false
+    pinDraft: '', shake: false, unlocking: false
   };
 
   function apiBase() {
@@ -203,7 +203,7 @@
         try { localStorage.setItem(TOKEN_KEY, r.token); } catch (e) { }
         cloud.busy = false;
         setStatus('syncing');
-        return pullState(true).then(function () { startPolling(); render(); });
+        return unlockThenEnter();
       })
       .catch(function (e) {
         cloud.busy = false;
@@ -345,6 +345,7 @@
   function go(r) { location.hash = '#/' + r; }
 
   function render(nav) {
+    if (cloud.unlocking) return;                  /* the unlock owns the DOM */
     var r = route();
     var root = document.getElementById('root');
     if (cloud.mode === 'cloud' && !cloud.token) {
@@ -358,8 +359,10 @@
       }
       return;
     }
+    var fromLogin = enteringFromLogin;
+    enteringFromLogin = false;
     var from = root.querySelector('.gateway') ? 'gateway' : (root.querySelector('.app') ? 'app' : '');
-    if (nav && from) snapshot(root, (from === 'app' && r) ? 'main' : 'all');
+    if (nav && from && !fromLogin) snapshot(root, (from === 'app' && r) ? 'main' : 'all');
     if (!r) {
       root.innerHTML = gateway();
       document.title = 'makuru.';
@@ -372,10 +375,45 @@
     var views = { dashboard: viewDashboard, stock: viewStock, materials: viewMaterials, shops: viewShops, orders: viewOrders };
     root.innerHTML = shell(r, views[r]());
     var appEl = root.querySelector('.app');
-    if (nav && appEl && from === 'gateway') appEl.classList.add('is-entering');
+    if (appEl && fromLogin) { appEl.classList.add('is-unlock-in'); cloud.unlocking = false; }
+    else if (nav && appEl && from === 'gateway') appEl.classList.add('is-entering');
     else if (nav && appEl && from === 'app') appEl.classList.add('page-enter');
     document.title = byId(ROUTES, r).label + ' - makuru.';
     countUp(root, from !== 'app');
+  }
+
+  /* ---------- sign in -> main page ---------- */
+  var enteringFromLogin = false;
+
+  /* The card dissolves upward while a bloom of light covers the swap, then the
+     app rises out of it — one motion, not two page changes. */
+  function playUnlock(root) {
+    var card = root.querySelector('.login-card');
+    var veil = document.createElement('div');
+    veil.className = 'unlock-veil';
+    document.body.appendChild(veil);
+    if (card) card.classList.add('is-unlocking');
+    var logo = root.querySelector('.gateway-logo');
+    if (logo) logo.classList.add('is-unlocking');
+    setTimeout(function () { if (veil.parentNode) veil.parentNode.removeChild(veil); }, 1900);
+    return new Promise(function (done) { setTimeout(done, 520); });
+  }
+
+  function unlockThenEnter() {
+    var root = document.getElementById('root');
+    var canPlay = CAN_ANIM && !!root.querySelector('.login-card');
+    cloud.unlocking = true;                       /* render() stands down */
+
+    var anim = canPlay ? playUnlock(root) : Promise.resolve();
+    var pull = pullState(true).catch(function () { /* keep local data, still enter */ });
+
+    return Promise.all([pull, anim]).then(function () {
+      startPolling();
+      cloud.unlocking = false;
+      enteringFromLogin = true;
+      if (route() === 'dashboard') { render(true); window.scrollTo(0, 0); }
+      else location.hash = '#/dashboard';
+    });
   }
 
   /* ---------- motion ---------- */
@@ -482,7 +520,7 @@
   }
   function shell(r, content) {
     return '<div class="app"><aside class="sidebar"><div class="brand">makuru.</div>' +
-      ROUTES.map(function (x) { return '<button class="nav' + (x.id === r ? ' active' : '') + '" data-act="go" data-to="' + x.id + '">' + icon(x.icon, 18) + '<span>' + x.label + '</span></button>'; }).join('') +
+      ROUTES.map(function (x, i) { return '<button class="nav' + (x.id === r ? ' active' : '') + '" style="--i:' + i + '" data-act="go" data-to="' + x.id + '">' + icon(x.icon, 18) + '<span>' + x.label + '</span></button>'; }).join('') +
       '<div class="side-foot">' +
       (cloud.mode === 'cloud' ? '<div class="sync sync--' + cloud.status + '" data-sync><i></i><span>' + syncLabel() + '</span></div>' : '') +
       '<div class="side-note"><b>' + KITCHEN.name + '</b>' + KITCHEN.suburb + '</div>' +
@@ -744,6 +782,7 @@
   var ACT = {
     enter: function () { mkHop(); go('dashboard'); },
     login: function (b, f) {
+      if (cloud.unlocking) return;
       var pin = (vals(f).pin || '').trim();
       if (!pin) { cloud.err = 'Type the PIN.'; render(); return; }
       doLogin(pin);

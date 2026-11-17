@@ -46,9 +46,11 @@ async function device(name) {
 const signIn = async (page, pin = PIN) => {
   await page.fill('input[name=pin]', pin);
   await page.click('[data-act="login"]');
-  await wait(900);
+  await wait(1900);                     /* card dissolves -> veil -> app rises */
 };
-const enter = async (page) => { await page.click('[data-act="enter"]'); await wait(900); };
+/* Signing in goes straight to the dashboard, so there is nothing to enter.
+   Kept as a no-op so older flows still read naturally. */
+const enter = async () => {};
 const go = async (page, route) => {
   await page.evaluate(r => { location.hash = '#/' + r; }, route);
   await wait(700);
@@ -90,7 +92,8 @@ await signIn(A.page, '0000');
 ok(/Wrong PIN/.test(await A.page.textContent('.login-msg').catch(() => '')), 'wrong PIN shows an error');
 
 await signIn(A.page);
-ok(!!(await A.page.$('.gateway [data-act="enter"]')), 'correct PIN opens the app');
+ok(!!(await A.page.$('.app .main')) && !(await A.page.$('.login-card')),
+   'correct PIN goes straight to the main page');
 await enter(A.page);
 ok((await A.page.textContent('[data-sync]')).includes('Synced'), 'sidebar shows Synced');
 
