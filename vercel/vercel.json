@@ -3,6 +3,10 @@
   "framework": null,
   "rewrites": [
     {
+      "source": "/((?!api/|og-image\\.png$).*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
@@ -32,6 +36,19 @@
     {
       "source": "/index.html",
       "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/og-image.png",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "image/png"
+        },
         {
           "key": "Cache-Control",
           "value": "public, max-age=0, must-revalidate"

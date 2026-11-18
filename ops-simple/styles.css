@@ -236,6 +236,88 @@ svg{display:block;flex:none}
 .panel-body{padding:18px 20px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 
+/* ---------- home: the month, stated once ---------- */
+.hero-month{display:flex;align-items:stretch;justify-content:space-between;gap:18px;margin-bottom:18px;padding:20px 22px;
+  border-radius:var(--r-pane);border:1px solid var(--glass-line);
+  background:linear-gradient(150deg,rgba(255,255,255,.92) 0%,rgba(250,245,235,.82) 48%,rgba(246,230,227,.55) 100%);
+  box-shadow:inset 0 1px 0 var(--glass-edge),var(--shadow-soft)}
+.hm-label{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.hm-value{font-family:var(--display);font-weight:800;font-size:44px;line-height:1.05;letter-spacing:-.03em;margin-top:8px;font-variant-numeric:tabular-nums}
+.hm-sub{font-size:13px;color:var(--muted);margin-top:8px}
+.hm-right{display:flex;flex-direction:column;gap:8px;justify-content:center;min-width:190px}
+.hm-chip{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 14px;border-radius:14px;
+  background:rgba(255,255,255,.72);border:1px solid rgba(36,30,30,.06)}
+.hm-chip span{font-size:12px;color:var(--muted);font-weight:600}
+.hm-chip b{font-family:var(--display);font-size:17px;font-variant-numeric:tabular-nums}
+.hm-chip.warn{background:rgba(246,230,227,.72);border-color:rgba(158,42,43,.16)}
+.hm-chip.warn b{color:var(--red)}
+.neg{color:var(--red)}
+
+/* the shop stock block: one line per shop, the boxes written out */
+.pack{display:inline-block;margin:2px 6px 2px 0;padding:3px 9px;border-radius:9999px;background:rgba(243,235,221,.7);
+  border:1px solid rgba(36,30,30,.05);font-size:12px;font-weight:600;white-space:nowrap}
+.panel-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-top:1px solid rgba(36,30,30,.07);flex-wrap:wrap}
+
+/* ---------- finance ---------- */
+/* the month switcher sits under everything: a row of quiet chips */
+.months-pick{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px;padding:16px 18px;border-radius:var(--r-pane);
+  border:1px solid var(--glass-line);background:rgba(255,255,255,.55)}
+.months-pick .mp{border:1px solid rgba(36,30,30,.08);background:rgba(255,255,255,.8);color:var(--muted);
+  font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:9999px;white-space:nowrap;transition:background .18s,color .18s,transform .2s}
+.months-pick .mp:hover{background:var(--alt);color:var(--ink);transform:translateY(-1px)}
+.months-pick .mp.is-now{background:var(--ink);border-color:var(--ink);color:#fff}
+.stats--4{margin-bottom:18px}
+.fin-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.fin-cols>.panel{margin-bottom:18px}
+.tbl--pl td{padding:10px 20px}
+.tbl--pl tr.pl-sum td{border-top:1px solid rgba(36,30,30,.14)}
+.tbl--pl tr.pl-sum:first-child td{border-top:0}
+.tbl--pl tr.pl-sum .td-main{font-family:var(--display);font-size:15px}
+.tbl--pl tr.pl-sum td.num{font-weight:700;font-size:15px}
+.tbl--pl tr.pl-minus td.num{color:var(--red)}
+.tbl--pl tr td.num{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600}
+.story{margin:0;padding:18px 20px;font-size:14.5px;line-height:1.65;color:var(--ink)}
+.tips{padding:0 20px 6px}
+.tip{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0;border-top:1px solid rgba(36,30,30,.07)}
+.tip b{display:block;font-size:13.5px}
+.tip span{display:block;font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.tip .btn{flex-shrink:0}
+
+/* month bars */
+.bars{display:flex;align-items:flex-end;gap:8px;height:170px;padding:18px 20px 6px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px;min-width:0}
+.bar-stack{position:relative;flex:1;width:100%;max-width:44px;display:flex;align-items:flex-end;justify-content:center}
+.bar{position:absolute;bottom:0;width:100%;border-radius:8px 8px 4px 4px;transition:height .5s cubic-bezier(.2,.8,.25,1)}
+.bar--rev{background:linear-gradient(180deg,rgba(158,42,43,.85),rgba(158,42,43,.55))}
+.bar--net{background:rgba(74,107,83,.45);width:58%;border-radius:6px 6px 3px 3px}
+.bar-col.is-now .bar--rev{background:linear-gradient(180deg,#9E2A2B,#832223)}
+.bar-val{font-size:10.5px;color:var(--muted);font-weight:600;white-space:nowrap}
+.bar-col.is-now .bar-val{color:var(--red)}
+.bar-lab{font-size:11px;color:var(--muted);font-weight:600}
+.legend{display:flex;gap:16px;padding:0 20px 16px;font-size:11.5px;color:var(--muted)}
+.legend .dot{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:6px;vertical-align:1px}
+.dot--rev{background:#9E2A2B}
+.dot--net{background:rgba(74,107,83,.55)}
+
+/* day bars */
+.spark{display:flex;align-items:flex-end;gap:3px;height:110px;padding:18px 20px 0}
+.spark i{flex:1;min-width:3px;border-radius:3px 3px 1px 1px;background:rgba(36,30,30,.07);transition:height .5s cubic-bezier(.2,.8,.25,1)}
+.spark i.has{background:linear-gradient(180deg,rgba(221,161,94,.95),rgba(158,42,43,.55))}
+.spark-foot{display:flex;justify-content:space-between;gap:10px;padding:8px 20px 16px;font-size:11.5px;color:var(--muted)}
+
+/* ranking rows */
+.rank{padding:6px 20px 14px}
+.rank-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(36,30,30,.06)}
+.rank-row:last-child{border-bottom:0}
+.rank-n{width:22px;height:22px;border-radius:8px;background:rgba(243,235,221,.9);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0}
+.rank-main{flex:1;min-width:0}
+.rank-top{display:flex;justify-content:space-between;gap:10px;font-size:13px}
+.rank-top b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-top span{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.rank-top em{font-style:normal;color:var(--muted);font-weight:500;font-size:11.5px}
+.rank-bar{height:6px;border-radius:9999px;background:rgba(36,30,30,.06);margin-top:7px;overflow:hidden}
+.rank-bar i{display:block;height:100%;border-radius:9999px;background:linear-gradient(90deg,rgba(158,42,43,.75),rgba(221,161,94,.9));transition:width .5s cubic-bezier(.2,.8,.25,1)}
+
 /* tables */
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
@@ -361,6 +443,16 @@ td.act .btn{margin-left:4px}
 }
 @media (max-width:560px){
   .stats{grid-template-columns:1fr 1fr}
+  /* the month card stacks: a 44px figure plus two chips needs the width */
+  .hero-month{flex-direction:column;gap:14px;padding:18px 18px}
+  .hm-value{font-size:38px}
+  .hm-right{min-width:0;width:100%}
+  .fin-cols{grid-template-columns:1fr;gap:0}
+  .bars{gap:5px;padding:16px 14px 6px;height:150px}
+  .bar-val{display:none}
+  .spark{padding:14px 14px 0}
+  .seg--pick{margin:0 0 16px;padding:4px}
+  .spark i{min-width:2px}
   .stat .value{font-size:26px}
   .page-head h1{font-size:24px}
   /* orders become cards on a phone: seven columns never fit 390px, and a sideways
@@ -383,6 +475,27 @@ td.act .btn{margin-left:4px}
   .tbl--orders td:nth-child(6){grid-area:5/1;align-self:center}
   .tbl--orders td:nth-child(8){grid-area:6/1/7/3;display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
   .tbl--orders td:nth-child(8) .btn{flex:1;justify-content:center;min-height:40px}
+  /* the shop stock block and the money ledger read as cards too: a five column
+     table at 390px hides the number on the right, which is the one you want */
+  .tbl--shops thead,.tbl--ledger thead{display:none}
+  .tbl--shops,.tbl--shops tbody,.tbl--shops tr,.tbl--shops td,
+  .tbl--ledger,.tbl--ledger tbody,.tbl--ledger tr,.tbl--ledger td{display:block;width:auto}
+  .tbl--shops tr,.tbl--ledger tr{display:grid;grid-template-columns:1fr auto;gap:5px 10px;padding:13px 16px;
+    border-top:1px solid rgba(36,30,30,.07)}
+  .tbl--shops tr:first-child,.tbl--ledger tr:first-child{border-top:0}
+  .tbl--shops tr td,.tbl--ledger tr td{padding:0;border:0;background:none;text-align:left}
+  .tbl--shops td:nth-child(1){grid-area:1/1/2/3}
+  .tbl--shops td:nth-child(2){grid-area:3/1/4/3;margin-top:3px}
+  .tbl--shops td:nth-child(3){grid-area:2/1;font-size:12.5px;color:var(--muted);font-weight:600}
+  .tbl--shops td:nth-child(3) b{color:var(--ink);font-size:13.5px}
+  .tbl--shops td:nth-child(3)::after{content:" packs"}
+  .tbl--shops td:nth-child(4){grid-area:2/2;text-align:right;font-weight:700;font-size:13.5px}
+  .tbl--ledger td:nth-child(2){grid-area:1/1/2/2}
+  .tbl--ledger td:nth-child(5){grid-area:1/2;text-align:right;align-self:start}
+  .tbl--ledger td:nth-child(1){grid-area:2/1;font-size:12.5px;color:var(--muted)}
+  .tbl--ledger td:nth-child(4){grid-area:2/2;text-align:right;font-size:12.5px;color:var(--muted)}
+  .tbl--ledger td:nth-child(4)::after{content:" packs"}
+  .tbl--ledger td:nth-child(3){grid-area:3/1/4/3;font-size:12.5px;color:var(--muted)}
   .tbl--orders .td-sub{font-size:12.5px}
   /* pickup time is a tap target, not just text */
   .time-slot{padding:6px 10px 6px 8px;margin-left:-8px;gap:6px;min-height:34px;border-radius:10px;font-weight:500

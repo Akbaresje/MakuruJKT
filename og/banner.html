@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts/fonts-inline.css">
+<link rel="stylesheet" href="mascot/mascot.css">
+<style>
+  html,body{margin:0;padding:0}
+  .card{width:1200px;height:630px;position:relative;overflow:hidden;
+    background:
+      radial-gradient(900px 520px at 88% -10%, rgba(246,230,227,.95), rgba(246,230,227,0) 62%),
+      radial-gradient(760px 480px at -8% 108%, rgba(243,235,221,.98), rgba(243,235,221,0) 60%),
+      linear-gradient(168deg,#FCF8F1 0%, #FAF5EB 46%, #F7EFE3 100%);
+    font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#241E1E;
+    display:flex;align-items:center;box-sizing:border-box;padding:0 88px}
+  .left{flex:1;min-width:0}
+  .logo{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:132px;line-height:.92;letter-spacing:-.048em;color:#9E2A2B}
+  .rule{width:96px;height:6px;border-radius:9999px;background:linear-gradient(90deg,#9E2A2B,#DDA15E);margin:34px 0 30px}
+  h1{font-size:44px;line-height:1.18;font-weight:700;letter-spacing:-.02em;margin:0;max-width:620px}
+  p{font-size:24px;line-height:1.5;color:#736B66;margin:20px 0 0;max-width:600px}
+  .where{position:absolute;left:88px;bottom:64px;display:flex;align-items:center;gap:12px;font-size:21px;color:#736B66;font-weight:600}
+  .dot{width:9px;height:9px;border-radius:50%;background:#4A6B53}
+  .stage{width:360px;height:360px;position:relative;flex-shrink:0;margin-left:20px;margin-bottom:26px}
+  .halo{position:absolute;inset:-40px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,0) 72%)}
+  .bun{position:relative;width:360px;height:360px}
+  .pill{position:absolute;right:-14px;bottom:-8px;z-index:3;background:#FFFFFF;border:2px solid rgba(36,30,30,.10);border-radius:9999px;
+    padding:13px 22px;font-size:20px;font-weight:700;box-shadow:0 18px 40px -22px rgba(36,30,30,.45);white-space:nowrap}
+  .pill i{width:9px;height:9px;border-radius:50%;background:#9E2A2B;display:inline-block;margin-right:10px;vertical-align:2px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="left">
+    <div class="logo">makuru.</div>
+    <div class="rule"></div>
+    <h1>Dimsum stock, shops and orders, in one calm place.</h1>
+    <p>Packs in the kitchen, packs at each shop, pre-orders and the month's money.</p>
+  </div>
+  <div class="stage">
+    <div class="halo"></div>
+    <div class="pill"><i></i>Base kitchen Belmore</div>
+    <div class="bun" id="bun"></div>
+  </div>
+  <div class="where"><span class="dot"></span>Sydney, Australia &nbsp;·&nbsp; Open PO batches</div>
+</div>
+<script src="mascot/mascot.js"></script>
+<script>
+  document.fonts.ready.then(() => { window.__ready = true; });
+  var m = MakuruMascot.create(document.getElementById('bun'), { size: 360, fixed: false, bubble: '', follow: false, greet: 0 });
+  document.getElementById('bun').style.cssText = 'position:relative;width:360px;height:360px';
+</script>
+</body>
+</html>

@@ -6,7 +6,12 @@
   var KITCHEN = { name: 'Base Kitchen', suburb: 'Belmore NSW 2192' };
 
   function emptyDB() {
-    return { products: [], materials: [], shops: [], orders: [], sales: [], seq: { order: 1 } };
+    return { products: [], materials: [], shops: [], orders: [], sales: [], seq: { order: 1 }, settings: emptySettings() };
+  }
+  /* the only numbers the owner has to type before the money page can say
+     anything true about a month */
+  function emptySettings() {
+    return { rent: 0 };
   }
   function loadDB() {
     try {
@@ -256,7 +261,10 @@
 
   /* ---------- helpers ---------- */
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function money(n) { return '$' + (Number(n) || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function money(n) {
+    var v = Number(n) || 0, sign = v < 0 ? '-' : '';
+    return sign + '$' + Math.abs(v).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
   function num(n) { var v = Number(n) || 0; return v % 1 === 0 ? String(v) : v.toFixed(2).replace(/0+$/, '').replace(/\.$/, ''); }
   function today() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   /* "14:30" -> "2:30 pm"; anything else is shown as typed */
@@ -293,6 +301,131 @@
   function totalKitchen() { return db.products.reduce(function (a, p) { return a + p.kitchen; }, 0); }
   function totalShops() { return db.products.reduce(function (a, p) { return a + packsInShops(p); }, 0); }
 
+  /* ---------- money ----------
+     Everything here reads the same two lists (paid orders and shop sales) so the
+     Home recap, the Finance page and the CSV can never disagree. */
+  function ym(dateStr, ymStr) {
+    if (ymStr) return ymStr;
+    return String(dateStr || today()).slice(0, 7);
+  }
+  function monthLabel(ymStr) {
+    var p = String(ymStr || '').split('-'); if (p.length < 2) return ymStr || '';
+    var m = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return (m[Number(p[1]) - 1] || p[1]) + ' ' + p[0];
+  }
+  function addMonth(ymStr, n) {
+    var p = String(ymStr).split('-'), d = new Date(Number(p[0]), Number(p[1]) - 1 + n, 1);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+  function daysInMonth(ymStr) {
+    var p = String(ymStr).split('-');
+    return new Date(Number(p[0]), Number(p[1]), 0).getDate();
+  }
+  function monthShort(ymStr) { return monthLabel(ymStr).slice(0, 3) + ' ' + String(ymStr).slice(0, 4); }
+
+  function saleMonths() {
+    var seen = {}, out = [];
+    function add(k) { if (k && !seen[k]) { seen[k] = 1; out.push(k); } }
+    db.orders.forEach(function (o) { if (o.paid) add(ym(o.date, o.paid_month)); });
+    db.sales.forEach(function (x) { add(ym(x.date, x.sale_month)); });
+    add(today().slice(0, 7));
+    return out.sort().reverse();
+  }
+
+  /* one month, one set of numbers, used by every screen */
+  function monthCalc(ymStr) {
+    var y = ym(ymStr);
+    var inMonth = function (d, forced) { return ym(d, forced) === y; };
+    var ords = db.orders.filter(function (o) { return o.paid && inMonth(o.date, o.paid_month); });
+    var sales = db.sales.filter(function (x) { return inMonth(x.date, x.sale_month); });
+
+    /* commissions: the rate that was active on the sale date */
+    var commission = sales.reduce(function (a, x) {
+      var s = shop(x.shop_id); if (!s || !x.shop_id) return a;
+      return a + x.amount * (Number(s.commission) || 0) / 100;
+    }, 0);
+
+    /* food cost: add a "cost per pack" to a product to switch this on */
+    var cogs = 0, cogsPacks = 0;
+    function addCost(packs, price, pr) {
+      var c = Number(pr && pr.cost) || 0; if (!c) return;
+      cogs += c * packs; cogsPacks += packs;
+    }
+    var priced = 0, totalProducts = db.products.length;
+    ords.forEach(function (o) {
+      (o.items || []).forEach(function (i) { addCost(Number(i.qty) || 0, i.price, product(i.product_id)); });
+    });
+    sales.forEach(function (x) { addCost(Number(x.qty) || 0, 0, product(x.product_id)); });
+    priced = cogsPacks > 0;
+
+    var gross = ords.reduce(function (a, o) { return a + (Number(o.total) || 0); }, 0) + sales.reduce(function (a, x) { return a + (Number(x.amount) || 0); }, 0);
+    var rent = Number((db.settings || {}).rent) || 0;
+    var net = gross - commission - rent - cogs;
+
+    var unpaidOrd = db.orders.filter(function (o) { return !o.paid; });
+    var unpaid = unpaidOrd.reduce(function (a, o) { return a + (Number(o.total) || 0); }, 0);
+
+    var packs = ords.reduce(function (a, o) { return a + (Number(o.packs) || 0); }, 0) + sales.reduce(function (a, x) { return a + (Number(x.qty) || 0); }, 0);
+
+    return {
+      ym: y, label: monthLabel(y),
+      orderCount: ords.length, saleCount: sales.length,
+      orderRevenue: ords.reduce(function (a, o) { return a + (Number(o.total) || 0); }, 0),
+      shopRevenue: sales.reduce(function (a, x) { return a + (Number(x.amount) || 0); }, 0),
+      gross: gross, commission: commission, rent: rent, cogs: cogs,
+      net: net, packs: packs, unpaid: unpaid, unpaidCount: unpaidOrd.length,
+      hasFoodCost: priced, pricedProducts: totalProducts ? null : 0
+    };
+  }
+
+  /* daily revenue of one month, for the bars */
+  function dailySeries(ymStr, key) {
+    var n = daysInMonth(ymStr), out = [];
+    for (var i = 1; i <= n; i++) out.push(0);
+    function add(dateStr, forced, v) {
+      if (ym(dateStr, forced) !== ymStr) return;
+      var d = Number(String(dateStr).slice(8, 10)) || 1;
+      out[Math.min(n, Math.max(1, d)) - 1] += v;
+    }
+    db.orders.forEach(function (o) { if (!o.paid) return; if (key === 'orders') add(o.date, o.paid_month, Number(o.total) || 0); });
+    db.sales.forEach(function (x) { if (key === 'orders') return; add(x.date, x.sale_month, Number(x.amount) || 0); });
+    return out;
+  }
+
+  function byKey(list, keyFn, valFn) {
+    var map = {}, order = [];
+    list.forEach(function (x) {
+      var k = keyFn(x); if (k === null || k === undefined || k === '') return;
+      if (!(k in map)) { map[k] = 0; order.push(k); }
+      map[k] += valFn(x);
+    });
+    return order.map(function (k) { return { key: k, value: map[k] }; }).sort(function (a, b) { return b.value - a.value; });
+  }
+  function monthSales(ymStr) {
+    return db.sales.filter(function (x) { return ym(x.date, x.sale_month) === String(ymStr); });
+  }
+  function monthPaidOrders(ymStr) {
+    return db.orders.filter(function (o) { return o.paid && ym(o.date, o.paid_month) === String(ymStr); });
+  }
+  /* a plain-English line you could paste to someone who asks "how was the month" */
+  function monthStory(m) {
+    if (!m.orderCount && !m.saleCount) return 'No sales recorded for ' + m.label + ' yet.';
+    var parts = [];
+    if (m.orderCount) parts.push(m.orderCount + ' paid order' + (m.orderCount === 1 ? '' : 's'));
+    if (m.saleCount) parts.push(m.saleCount + ' shop sale' + (m.saleCount === 1 ? '' : 's'));
+    var head = 'In ' + m.label + ' you took ' + money(m.gross) + ' from ' + parts.join(' and ');
+    var tail = m.packs ? ', at ' + money(m.gross / m.packs) + ' a pack' : '';
+    var costs = [];
+    if (m.commission > 0) costs.push(money(m.commission) + ' to shop commission');
+    if (m.cogs > 0) costs.push(money(m.cogs) + ' on ingredients');
+    if (m.rent > 0) costs.push(money(m.rent) + ' in fixed costs');
+    var after = costs.length
+      ? '. After ' + costs.join(', ') + ' you kept ' + money(m.net) + '.'
+      : '. Nothing is taken out yet, so the whole ' + money(m.net) + ' is yours.';
+    var owe = m.unpaid > 0 ? ' ' + money(m.unpaid) + ' is still unpaid and not counted here.' : '';
+    return head + tail + after + owe;
+  }
+
   var ICON = {
     home: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
     box: '<path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>',
@@ -309,9 +442,22 @@
     undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>',
     edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
     lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    chart: '<path d="M4 20V4"/><path d="M4 20h16"/><rect x="8" y="12" width="3.2" height="5"/><rect x="13" y="8" width="3.2" height="9"/><rect x="18" y="4.5" width="3.2" height="12.5"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     cloud: '<path d="M17.5 19a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.6-1.5A4 4 0 0 0 6.5 19Z"/>'
   };
+  /* small drawn art, no images: three bars under an arrow, in brand ink on cream */
+  function artMoney(w, h) {
+    return '<svg class="art-money" viewBox="0 0 120 120" width="' + w + '" height="' + h + '" aria-hidden="true" focusable="false">' +
+      '<rect x="0" y="0" width="120" height="120" rx="26" fill="#F3EBDD"/>' +
+      '<path d="M24 82h72" stroke="#241E1E" stroke-opacity=".14" stroke-width="2" stroke-linecap="round"/>' +
+      '<rect x="30" y="62" width="13" height="20" rx="4" fill="#9E2A2B" fill-opacity=".22"/>' +
+      '<rect x="53" y="48" width="13" height="34" rx="4" fill="#9E2A2B" fill-opacity=".45"/>' +
+      '<rect x="76" y="34" width="13" height="48" rx="4" fill="#9E2A2B"/>' +
+      '<path d="M32 40c10-8 22-9 33-4 8 4 15 3 22-1" stroke="#9E2A2B" stroke-width="3" stroke-linecap="round" fill="none" stroke-opacity=".55"/>' +
+      '<path d="M79 30l9 3-3 9" stroke="#9E2A2B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-opacity=".55"/>' +
+      '</svg>';
+  }
   function icon(n, s) { s = s || 16; return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + ICON[n] + '</svg>'; }
 
   /* ---------- ui primitives ---------- */
@@ -374,9 +520,10 @@
     { id: 'stock', label: 'Dimsum Stock', icon: 'box' },
     { id: 'materials', label: 'Raw Materials', icon: 'leaf' },
     { id: 'shops', label: 'Shops', icon: 'store' },
-    { id: 'orders', label: 'Orders', icon: 'cart' }
+    { id: 'orders', label: 'Orders', icon: 'cart' },
+    { id: 'finance', label: 'Finance', icon: 'chart' }
   ];
-  var ui = { orderFilter: 'open' };
+  var ui = { orderFilter: 'open', finMonth: '' };
   function route() { var h = location.hash.replace(/^#\/?/, ''); return h || ''; }
   function go(r) { location.hash = '#/' + r; }
 
@@ -405,7 +552,7 @@
       return;
     }
     if (!byId(ROUTES, r)) { go('dashboard'); return; }
-    var views = { dashboard: viewDashboard, stock: viewStock, materials: viewMaterials, shops: viewShops, orders: viewOrders };
+    var views = { dashboard: viewDashboard, stock: viewStock, materials: viewMaterials, shops: viewShops, orders: viewOrders, finance: viewFinance };
     root.innerHTML = shell(r, views[r]());
     var appEl = root.querySelector('.app');
     if (appEl && fromLogin) { appEl.classList.add('is-unlock-in'); cloud.unlocking = false; }
@@ -656,7 +803,19 @@
     var openOrders = db.orders.filter(function (o) { return o.status !== 'delivered'; });
     var lowMat = db.materials.filter(function (m) { return m.qty <= m.min; });
     var unpaid = db.orders.filter(function (o) { return !o.paid; }).reduce(function (a, o) { return a + o.total; }, 0);
-    var html = head('Home', 'Quick look at stock and orders');
+    monthQuiet();
+    var m = monthCalc(ui.finMonth);
+    var html = head('Home', 'Quick look at stock and money',
+      '<button class="btn" data-act="go" data-to="finance">' + icon('chart', 16) + 'Finance</button>');
+    /* the month, stated once and big, right at the top */
+    html += '<section class="hero-month">' +
+      '<div class="hm-left"><div class="hm-label">Sales this month - ' + esc(m.label) + '</div>' +
+      '<div class="hm-value" data-count="' + m.gross + '" data-kind="money" data-key="home-month">' + money(m.gross) + '</div>' +
+      '<div class="hm-sub">' + (m.orderCount + m.saleCount ? m.orderCount + ' paid order' + (m.orderCount === 1 ? '' : 's') + ' + ' + m.saleCount + ' shop sale' + (m.saleCount === 1 ? '' : 's') : 'Nothing paid yet this month') + '</div></div>' +
+      '<div class="hm-right">' +
+        '<div class="hm-chip"><span>Net after costs</span><b class="' + (m.net < 0 ? 'neg' : '') + '">' + money(m.net) + '</b></div>' +
+        (m.unpaid > 0 ? '<div class="hm-chip warn"><span>Still to collect</span><b>' + money(m.unpaid) + '</b></div>' : '') +
+      '</div></section>';
     html += '<div class="stats">' +
       stat('Packs in kitchen', num(totalKitchen()), db.products.length + ' product' + (db.products.length === 1 ? '' : 's'), false, { n: totalKitchen(), k: 'qty' }) +
       stat('Packs in shops', num(totalShops()), db.shops.length + ' shop' + (db.shops.length === 1 ? '' : 's'), false, { n: totalShops(), k: 'qty' }) +
@@ -680,6 +839,170 @@
       '</tbody></table></div>' : emptyBox('No open orders', 'New orders will show here.', 'New order', 'order-modal'),
       '<button class="btn btn--sm" data-act="go" data-to="orders">Open</button>');
     html += '</div>';
+    html += shopStockBlock();
+    return html;
+  }
+
+  /* two blocks the owner asked for by name: what is sitting where, and what the
+     month has actually paid */
+  function shopStockBlock() {
+    var rows = [];
+    db.shops.forEach(function (s) {
+      var per = db.products.map(function (p) { return { p: p, q: shopPacks(p, s.id) }; }).filter(function (x) { return x.q > 0; });
+      var packs = per.reduce(function (a, x) { return a + x.q; }, 0);
+      var value = per.reduce(function (a, x) { return a + x.q * (Number(x.p.price) || 0); }, 0);
+      rows.push({ s: s, per: per, packs: packs, value: value });
+    });
+    /* shops that hold nothing still get a line, at the bottom: an empty shop is
+       often the thing you want to spot */
+    rows.sort(function (a, b) { return b.packs - a.packs || (a.s.name < b.s.name ? -1 : 1); });
+    var body;
+    if (!rows.length) body = emptyBox('No shops yet', 'Add a shop, then send packs from Dimsum Stock.', 'Add shop', 'shop-modal');
+    else body = '<div class="tbl-wrap"><table class="tbl--shops"><thead><tr><th>Shop</th><th>Packs by product</th><th class="num">Packs</th><th class="num">Value</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr data-shop="' + esc(r.s.id) + '"><td><div class="td-main">' + esc(r.s.name) + '</div><div class="td-sub">' + esc(r.s.suburb || '') + (r.s.commission ? ' - ' + num(r.s.commission) + '% commission' : '') + '</div></td>' +
+          '<td class="col-per">' + (r.per.length ? r.per.map(function (x) { return '<span class="pack">' + num(x.q) + ' x ' + esc(x.p.name) + '</span>'; }).join('') : '<span class="hint">No packs yet</span>') + '</td>' +
+          '<td class="num"><b>' + num(r.packs) + '</b></td><td class="num">' + money(r.value) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+    var totalPacks = rows.reduce(function (a, r) { return a + r.packs; }, 0);
+    var totalValue = rows.reduce(function (a, r) { return a + r.value; }, 0);
+    return panel('Stock in shops', totalPacks ? num(totalPacks) + ' packs out at shops, ' + money(totalValue) + ' at selling price' : 'Packs you left at each shop',
+      body + (rows.length ? '<div class="panel-foot"><span class="hint">' + db.shops.length + ' shop' + (db.shops.length === 1 ? '' : 's') + ' - ' + money(totalValue) + ' at selling price</span><button class="btn btn--sm" data-act="go" data-to="shops">Open shops</button></div>' : ''));
+  }
+
+  function monthQuiet() {
+    if (ui.finMonth) return;
+    ui.finMonth = today().slice(0, 7);
+  }
+  function viewFinance() {
+    monthQuiet();
+    var months = saleMonths();
+    if (months.indexOf(ui.finMonth) < 0) { months.push(ui.finMonth); months.sort().reverse(); }
+    var m = monthCalc(ui.finMonth);
+    var last = monthCalc(addMonth(ui.finMonth, -1));
+    var prevMonths = months.filter(function (x) { return x < ui.finMonth; });
+    var prev = prevMonths.length ? monthCalc(prevMonths[0]) : null;
+    var before = last.gross > 0 ? last : prev;
+
+    var html = head('Finance', 'What came in, what it cost, what is left. Every figure in AUD.',
+      '<button class="btn" data-act="fin-settings">' + icon('edit') + 'Monthly costs</button>' +
+      '<button class="btn" data-act="fin-csv">' + icon('out') + 'Download CSV</button>');
+
+    var picker = '<div class="months-pick">' + months.slice(0, 12).map(function (k) {
+      return '<button data-act="fin-month" data-ym="' + k + '" class="mp' + (k === m.ym ? ' is-now' : '') + '">' + monthLabel(k) + '</button>';
+    }).join('') + '</div>';
+
+    html += '<div class="stats stats--4">' +
+      stat('Revenue - ' + monthShort(m.ym), money(m.gross), m.orderCount + ' order' + (m.orderCount === 1 ? '' : 's') + ' + ' + m.saleCount + ' shop sale' + (m.saleCount === 1 ? '' : 's'), false, { n: m.gross, k: 'money' }) +
+      stat('Commission', money(m.commission), m.commission ? 'Paid to shops on their sales' : 'No shop sales this month', false, { n: m.commission, k: 'money' }) +
+      stat('Costs', money(m.rent + m.cogs), (m.rent ? money(m.rent) + ' fixed' : 'No fixed cost') + (m.cogs ? ' - ' + money(m.cogs) + ' food' : ''), false, { n: m.rent + m.cogs, k: 'money' }) +
+      stat('Net', money(m.net), m.net > 0 ? (m.gross ? Math.round(m.net / m.gross * 100) + '% of revenue' : 'Money you kept') : 'Below break even', m.net < 0, { n: m.net, k: 'money' }) +
+      '</div>';
+
+    html += '<div class="fin-cols">';
+
+    /* profit and loss */
+    var pl = [
+      ['Paid orders', m.orderRevenue, 'Customer orders marked paid in ' + m.label],
+      ['Shop sales', m.shopRevenue, 'What the shops reported at selling price'],
+      ['Revenue', m.gross, 'Everything that came in', 'sum'],
+      ['Shop commission', -m.commission, m.commission ? 'The shops keep this part' : 'Nothing owed to shops', 'minus'],
+      ['Food cost', -m.cogs, m.cogs ? 'Cost per pack you filled in' : (db.products.length ? 'Add a cost per pack to a product to see this' : 'No products yet'), 'minus'],
+      ['Fixed costs', -m.rent, m.rent ? 'Rent, van, subscriptions per month' : 'Set your monthly costs', 'minus'],
+      ['Net profit', m.net, m.net >= 0 ? 'What you kept' : 'You spent more than you took', 'sum']
+    ];
+    html += panel('Profit and loss', m.label, '<div class="tbl-wrap"><table class="tbl--pl"><tbody>' +
+      pl.map(function (r) {
+        var cls = r[3] === 'sum' ? 'pl-sum' : (r[3] === 'minus' ? 'pl-minus' : '');
+        return '<tr class="' + cls + '"><td><div class="td-main">' + esc(r[0]) + '</div><div class="td-sub">' + esc(r[2]) + '</div></td><td class="num ' + (r[1] < 0 ? 'neg' : '') + '">' + money(r[1]) + '</td></tr>';
+      }).join('') + '</tbody></table></div>',
+      '<button class="btn btn--sm" data-act="fin-settings">' + icon('edit', 14) + 'Costs</button>');
+
+    /* month by month */
+    var trail = [];
+    for (var i = 0; i < 6; i++) trail.push(addMonth(m.ym, -i));
+    var trailCalc = trail.map(function (k) { return monthCalc(k); });
+    var max = 0; trailCalc.forEach(function (x) { max = Math.max(max, x.gross); });
+    html += panel('Month by month', 'Revenue and net for the last six months', '<div class="bars">' +
+      trailCalc.reverse().map(function (x) {
+        var h = max ? Math.max(2, Math.round(x.gross / max * 100)) : 0;
+        var hn = max ? Math.max(0, Math.round(Math.max(0, x.net) / max * 100)) : 0;
+        return '<div class="bar-col' + (x.ym === m.ym ? ' is-now' : '') + '" title="' + monthLabel(x.ym) + ': ' + money(x.gross) + ' in, ' + money(x.net) + ' net">' +
+          '<div class="bar-stack"><i class="bar bar--net" style="height:' + hn + '%"></i><i class="bar bar--rev" style="height:' + h + '%"></i></div>' +
+          '<div class="bar-val">' + (x.gross ? money(x.gross) : '-') + '</div>' +
+          '<div class="bar-lab">' + monthLabel(x.ym).slice(0, 3) + '</div></div>';
+      }).join('') + '</div><div class="legend"><span><i class="dot dot--rev"></i>Revenue</span><span><i class="dot dot--net"></i>Net</span></div>');
+
+    html += '</div>';
+
+    /* the shape of the month */
+    var series = dailySeries(m.ym, 'all');
+    var dailyMax = Math.max.apply(null, series.concat([1]));
+    var bestDay = 0, bestVal = 0;
+    series.forEach(function (v, idx) { if (v > bestVal) { bestVal = v; bestDay = idx + 1; } });
+    var busiest = byKey(monthPaidOrders(m.ym), function (o) { return (o.created || '').slice(11, 13); }, function (o) { return o.total; });
+    var hourLabel = function (h) { var n = Number(h); if (isNaN(n)) return ''; return fmtTime(h + ':00'); };
+    html += panel('Day by day', m.label + ' - ' + money(m.gross) + ' over ' + m.packs + ' pack' + (m.packs === 1 ? '' : 's'),
+      '<div class="spark">' + series.map(function (v, idx) {
+        var h = Math.round(v / dailyMax * 100);
+        return '<i style="height:' + Math.max(v > 0 ? 6 : 2, h) + '%" class="' + (v > 0 ? 'has' : '') + '" title="' + (idx + 1) + ' ' + m.label + ': ' + money(v) + '"></i>';
+      }).join('') + '</div>' +
+      '<div class="spark-foot"><span>1 ' + monthLabel(m.ym).slice(0, 3) + '</span>' +
+      '<span>' + (bestVal ? 'Best day ' + bestDay + ' ' + monthShort(m.ym) + ': ' + money(bestVal) : 'No sales yet') + '</span>' +
+      '<span>' + series.length + ' days</span></div>');
+
+    /* where the money comes from */
+    var byShop = byKey(monthSales(m.ym), function (x) { var s = shop(x.shop_id); return s ? s.name : (x.shop_name || 'Unknown shop'); }, function (x) { return x.amount; });
+    var byProduct = byKey(monthPaidOrders(m.ym).reduce(function (a, o) { return a.concat(o.items || []); }, []).concat(monthSales(m.ym).map(function (x) { return { name: x.product_name, qty: x.qty, price: x.amount / (x.qty || 1) }; })), function (i) { return i.name; }, function (i) { return (Number(i.price) || 0) * (Number(i.qty) || 0); });
+
+    html += '<div class="fin-cols">';
+    html += panel('Shop ranking', 'Who sold the most for you', byShop.length ? '<div class="rank">' + byShop.map(function (x, idx) {
+      var pct = m.shopRevenue ? Math.round(x.value / m.shopRevenue * 100) : 0;
+      return '<div class="rank-row"><span class="rank-n">' + (idx + 1) + '</span><div class="rank-main"><div class="rank-top"><b>' + esc(x.key) + '</b><span>' + money(x.value) + '</span></div><div class="rank-bar"><i style="width:' + Math.max(3, pct) + '%"></i></div></div></div>';
+    }).join('') + '</div>' : '<div class="empty">No shop sales this month.<br><span class="hint">Open Shops, then use Sold when a shop reports.</span><div class="panel-body actions"><button class="btn btn--sm" data-act="go" data-to="shops">Open shops</button></div></div>');
+    html += panel('Product mix', 'Revenue by product this month', byProduct.length ? '<div class="rank">' + byProduct.map(function (x, idx) {
+      var total = byProduct.reduce(function (a, y) { return a + y.value; }, 0);
+      var pct = total ? Math.round(x.value / total * 100) : 0;
+      return '<div class="rank-row"><span class="rank-n">' + (idx + 1) + '</span><div class="rank-main"><div class="rank-top"><b>' + esc(x.key) + '</b><span>' + money(x.value) + ' <em>' + pct + '%</em></span></div><div class="rank-bar"><i style="width:' + Math.max(3, pct) + '%"></i></div></div></div>';
+    }).join('') + '</div>' : '<div class="empty">No paid orders or shop sales this month.</div>');
+    html += '</div>';
+
+    /* plain words + the things worth acting on */
+    var tips = [];
+    if (m.unpaid > 0) tips.push({ t: 'Collect ' + money(m.unpaid), d: m.unpaidCount + ' order' + (m.unpaidCount === 1 ? ' is' : 's are') + ' not paid yet. It is not counted as revenue until it is paid.', act: 'orders', to: 'orders', a: 'Open orders' });
+    if (!db.products.some(function (p) { return Number(p.cost) > 0; }) && db.products.length) tips.push({ t: 'Add a cost per pack', d: 'Without it the money page cannot show your real food cost or profit.', act: 'product-modal', a: 'Add cost' });
+    if (!m.rent) tips.push({ t: 'Set your monthly costs', d: 'Rent, the van, subscriptions. Put them in once and every month gets more honest.', act: 'fin-settings', a: 'Set costs' });
+    var lowMat = db.materials.filter(function (x) { return x.qty <= x.min; });
+    if (lowMat.length) tips.push({ t: 'Restock ' + lowMat.length + ' raw material' + (lowMat.length === 1 ? '' : 's'), d: lowMat.slice(0, 3).map(function (x) { return x.name; }).join(', ') + '. Cooking stops without these.', act: 'goto-materials', a: 'Open materials' });
+    var idle = [];
+    db.shops.forEach(function (s) {
+      var packs = db.products.reduce(function (a, p) { return a + shopPacks(p, s.id); }, 0);
+      var sold = monthSales(m.ym).filter(function (x) { return x.shop_id === s.id; });
+      if (packs > 0 && !sold.length) idle.push(s.name);
+    });
+    if (idle.length) tips.push({ t: idle.length + ' shop' + (idle.length === 1 ? '' : 's') + ' with no sale this month', d: idle.slice(0, 3).join(', ') + '. Check whether packs there are old.', act: 'goto-shops', a: 'Open shops' });
+    if (before && before.gross > 0 && m.gross < before.gross) tips.push({ t: 'Down ' + Math.round((1 - m.gross / before.gross) * 100) + '% from ' + before.label, d: before.label + ' was ' + money(before.gross) + ', this month is ' + money(m.gross) + '.', act: '', a: '' });
+
+    html += panel('Plain words', m.label,
+      '<p class="story">' + esc(monthStory(m)) + '</p>' +
+      (tips.length ? '<div class="tips">' + tips.map(function (x) {
+        return '<div class="tip"><div><b>' + esc(x.t) + '</b><span>' + esc(x.d) + '</span></div>' + (x.act ? '<button class="btn btn--sm" data-act="' + x.act + '"' + (x.to ? ' data-to="' + x.to + '"' : '') + '>' + esc(x.a) + '</button>' : '') + '</div>';
+      }).join('') + '</div>' : '<p class="hint">Nothing needs your attention this month.</p>'));
+
+    /* the receipts */
+    var ledger = monthPaidOrders(m.ym).map(function (o) {
+      return { date: o.date, what: 'Order ' + o.ref, who: o.customer + (o.pay ? ' - ' + o.pay : ''), packs: o.packs, amount: o.total, kind: 'order' };
+    }).concat(monthSales(m.ym).map(function (x) {
+      var s = shop(x.shop_id);
+      return { date: x.date, what: x.product_name, who: (s ? s.name : x.shop_name) + ' - shop sale', packs: x.qty, amount: x.amount, kind: 'shop' };
+    })).sort(function (a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+
+    html += panel('Every sale this month', m.orderCount + m.saleCount + ' entries', ledger.length ? '<div class="tbl-wrap"><table class="tbl--ledger"><thead><tr><th>Date</th><th>What</th><th>Customer / shop</th><th class="num">Packs</th><th class="num">Amount</th></tr></thead><tbody>' +
+      ledger.map(function (r) {
+        return '<tr><td>' + fmtDate(r.date) + '</td><td><div class="td-main">' + esc(r.what) + '</div><div class="td-sub">' + (r.kind === 'order' ? 'Paid order' : 'Shop sale') + '</div></td><td>' + esc(r.who) + '</td><td class="num">' + num(r.packs) + '</td><td class="num"><b>' + money(r.amount) + '</b></td></tr>';
+      }).join('') + '</tbody></table></div>' : '<div class="empty">Nothing paid in ' + esc(m.label) + ' yet.<br><span class="hint">Orders count here once you mark them paid.</span></div>');
+
+    html += picker;
     return html;
   }
 
@@ -801,6 +1124,11 @@
       (p ? '<input type="hidden" name="id" value="' + p.id + '">' : '') +
       field('Product name', input('name', { ph: 'e.g. Siomay Ayam', value: p ? p.name : '', req: true })) +
       '<div class="row">' + field('Pack size (optional)', input('pack_size', { ph: 'e.g. 6 pcs', value: p ? p.pack_size : '' })) + field('Price per pack (AUD)', input('price', { type: 'number', min: 0, step: '0.5', value: p ? p.price : '', ph: '0.00', req: true })) + '</div>' +
+      '<div class="row">' +
+        field('Cost per pack (optional)', input('cost', { type: 'number', min: 0, step: '0.5', value: p && p.cost ? p.cost : '', ph: '0.00' })) +
+        field('Cooking time (optional)', input('clock', { ph: 'e.g. 25 min', value: p ? p.clock : '' })) +
+      '</div>' +
+      '<p class="hint">The cost per pack is what the ingredients in one pack cost you. Fill it in and the money page works out your profit.</p>' +
       (p ? '' : field('Packs in kitchen now', input('kitchen', { type: 'number', min: 0, step: '1', value: 0 }))) +
       foot(p ? 'Save' : 'Add product', 'product-save')));
   }
@@ -906,6 +1234,44 @@
       foot('Mark paid', 'paid-save')));
   }
 
+  function finSettingsModal() {
+    var st = db.settings || emptySettings();
+    modal('Monthly costs', 'Fixed costs that do not change with how much you sell.', form('f-fincost',
+      '<div class="row">' + field('Rent / van / subscriptions (AUD)', input('rent', { type: 'number', min: 0, step: '1', value: st.rent || 0, ph: '0' })) + '</div>' +
+      '<p class="hint">Shop commission and food cost are worked out from your own numbers, so they do not go here.</p>' +
+      foot('Save costs', 'fin-settings-save')));
+  }
+
+  /* one file the accountant can open: the whole month, plus the recap on top */
+  function downloadCsv() {
+    var m = monthCalc(ui.finMonth);
+    var rows = [['month', m.label], ['revenue', m.gross.toFixed(2)], ['shop commission', (-m.commission).toFixed(2)],
+      ['food cost', (-m.cogs).toFixed(2)], ['fixed costs', (-m.rent).toFixed(2)], ['net', m.net.toFixed(2)], []];
+    rows.push(['date', 'type', 'ref', 'customer or shop', 'product', 'packs', 'amount']);
+    monthPaidOrders(m.ym).forEach(function (o) {
+      (o.items || []).forEach(function (i) {
+        rows.push([o.date, 'order', o.ref, o.customer, i.name, i.qty, (i.price * i.qty).toFixed(2)]);
+      });
+    });
+    monthSales(m.ym).forEach(function (x) {
+      var s = shop(x.shop_id);
+      rows.push([x.date, 'shop sale', '', s ? s.name : x.shop_name, x.product_name, x.qty, Number(x.amount).toFixed(2)]);
+    });
+    var csv = rows.map(function (r) {
+      return r.map(function (c) {
+        c = c === undefined || c === null ? '' : String(c);
+        return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c;
+      }).join(',');
+    }).join('\r\n');
+    var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'makuru-' + m.ym + '.csv';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1200);
+    toast('CSV ready');
+  }
+
   /* ---------- actions ---------- */
   function vals(formEl) {
     var o = {}; Array.prototype.forEach.call(formEl.elements, function (el) { if (!el.name) return; o[el.name] = el.type === 'checkbox' ? el.checked : el.value; }); return o;
@@ -924,14 +1290,14 @@
     go: function (b) { go(b.getAttribute('data-to')); },
     close: function () { closeModal(); },
     'order-filter': function (b) { ui.orderFilter = b.getAttribute('data-f'); render(); },
-    'clear-ask': function () { confirmDelete('all data', 'clear-do', '', 'All products, materials, shops and orders will be removed.'); },
+    'clear-ask': function () { confirmDelete('all data', 'clear-do', '', 'All products, materials, shops, orders and shop sales will be removed.'); },
     'clear-do': function () { db = emptyDB(); save(); closeModal(); render(); toast('All data cleared'); },
 
     'product-modal': function (b) { productModal(b.getAttribute('data-id')); },
     'product-save': function (b, f) {
       var v = vals(f); need(v.name.trim(), 'Please type a product name');
-      if (v.id) { var p = product(v.id); p.name = v.name.trim(); p.pack_size = v.pack_size.trim(); p.price = Number(v.price) || 0; }
-      else db.products.push({ id: uid(), name: v.name.trim(), pack_size: v.pack_size.trim(), price: Number(v.price) || 0, kitchen: Math.max(0, Math.floor(Number(v.kitchen) || 0)), shops: {} });
+      if (v.id) { var p = product(v.id); p.name = v.name.trim(); p.pack_size = v.pack_size.trim(); p.price = Number(v.price) || 0; p.cost = Number(v.cost) || 0; p.clock = v.clock.trim(); }
+      else db.products.push({ id: uid(), name: v.name.trim(), pack_size: v.pack_size.trim(), price: Number(v.price) || 0, cost: Number(v.cost) || 0, clock: v.clock.trim(), kitchen: Math.max(0, Math.floor(Number(v.kitchen) || 0)), shops: {} });
       save(); closeModal(); render(); toast(v.id ? 'Product saved' : 'Product added'); mkHop();
     },
     'product-del-ask': function (b) { var p = product(b.getAttribute('data-id')); confirmDelete('"' + p.name + '"', 'product-del', p.id, 'Its stock numbers will be removed too. Old orders keep the name.'); },
@@ -987,7 +1353,8 @@
       need(q > 0, 'Enter packs sold'); need(q <= have, 'Only ' + num(have) + ' packs at this shop');
       p.shops[s.id] = have - q; if (p.shops[s.id] === 0) delete p.shops[s.id];
       var price = Number(v.price) || 0;
-      db.sales.push({ id: uid(), date: v.date || today(), shop_id: s.id, shop_name: s.name, product_id: p.id, product_name: p.name, qty: q, amount: Math.round(price * q * 100) / 100 });
+      var d = v.date || today();
+      db.sales.push({ id: uid(), date: d, sale_month: ym(d), shop_id: s.id, shop_name: s.name, product_id: p.id, product_name: p.name, qty: q, amount: Math.round(price * q * 100) / 100 });
       save(); closeModal(); render(); toast('Sale saved');
     },
     'sale-del-ask': function (b) { confirmDelete('this sale', 'sale-del', b.getAttribute('data-id'), 'The packs go back to the shop count.'); },
@@ -1031,12 +1398,31 @@
       items.forEach(function (i) { product(i.product_id).kitchen -= i.qty; });
       var total = items.reduce(function (a, i) { return a + i.price * i.qty; }, 0);
       var ref = 'ORD-' + String(db.seq.order++).padStart(3, '0');
-      db.orders.push({ id: uid(), ref: ref, customer: v.customer.trim(), phone: v.phone.trim(), suburb: v.suburb.trim(), date: v.date || today(), items: items, packs: items.reduce(function (a, i) { return a + i.qty; }, 0), total: Math.round(total * 100) / 100, time: v.time || '', paid: !!v.paid, pay: v.paid ? (v.pay || 'Paid') : '', status: 'open', note: v.note.trim(), created: new Date().toISOString() });
+      var d = v.date || today();
+      db.orders.push({ id: uid(), ref: ref, customer: v.customer.trim(), phone: v.phone.trim(), suburb: v.suburb.trim(), date: d, items: items, packs: items.reduce(function (a, i) { return a + i.qty; }, 0), total: Math.round(total * 100) / 100, time: v.time || '', paid: !!v.paid, paid_month: v.paid ? ym(d) : '', pay: v.paid ? (v.pay || 'Paid') : '', status: 'open', note: v.note.trim(), created: new Date().toISOString() });
       ui.orderFilter = 'open';
       save(); closeModal(); render(); toast('Order ' + ref + ' saved'); mkHop('Order saved.');
     },
     'paid-modal': function (b) { paidModal(b.getAttribute('data-id')); },
-    'paid-save': function (b, f) { var v = vals(f), o = byId(db.orders, v.id); if (o) { o.paid = true; o.pay = v.pay; } save(); closeModal(); render(); toast('Marked as paid'); },
+    'paid-save': function (b, f) {
+      var v = vals(f), o = byId(db.orders, v.id); if (!o) return;
+      o.paid = true; o.pay = v.pay;
+      /* the day the money actually arrived, not the day the order was placed */
+      o.paid_month = o.paid_month || today().slice(0, 7);
+      o.paid_on = o.paid_on || today();
+      save(); closeModal(); render(); toast('Marked as paid');
+    },
+    'fin-month': function (b) { ui.finMonth = b.getAttribute('data-ym'); render(); },
+    'fin-settings': function () { finSettingsModal(); },
+    'fin-settings-save': function (b, f) {
+      var v = vals(f);
+      db.settings = db.settings || emptySettings();
+      db.settings.rent = Math.max(0, Number(v.rent) || 0);
+      save(); closeModal(); render(); toast('Monthly costs saved');
+    },
+    'fin-csv': function () { downloadCsv(); },
+    'goto-shops': function () { go('shops'); },
+    'goto-materials': function () { go('materials'); },
     'order-deliver': function (b) {
       var o = byId(db.orders, b.getAttribute('data-id')); if (!o) return;
       /* an order may never leave the kitchen unpaid */
