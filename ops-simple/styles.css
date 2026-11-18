@@ -87,14 +87,30 @@ svg{display:block;flex:none}
 
 /* ---------- sign in -> main page: one continuous unlock ---------- */
 /* 1. the card lifts, blurs and dissolves upward */
-.login-card.is-unlocking{animation:cardUnlock .54s cubic-bezier(.4,.06,.2,1) both}
+/* splash -> login: the card unfolds under the wordmark that is gliding down */
+.login-card.is-unfold{will-change:transform,opacity;animation:cardUnfold .74s .07s cubic-bezier(.16,.84,.3,1) both}
+@keyframes cardUnfold{
+  0%{opacity:0;transform:translateY(18px) scale(.968)}
+  62%{opacity:1}
+  100%{opacity:1;transform:none}
+}
+.login-card.is-unfold::after{animation-delay:.52s}
+.login-card.is-unfold .login-icon{animation:softIn .5s .18s cubic-bezier(.2,.8,.25,1) both}
+.login-card.is-unfold .login-title{animation:softIn .5s .23s cubic-bezier(.2,.8,.25,1) both}
+.login-card.is-unfold .login-sub{animation:softIn .5s .28s cubic-bezier(.2,.8,.25,1) both}
+.login-card.is-unfold .login-pin{animation:softIn .55s .33s cubic-bezier(.2,.8,.25,1) both}
+.login-card.is-unfold .login-msg{animation:softIn .5s .38s cubic-bezier(.2,.8,.25,1) both}
+.login-card.is-unfold .login-btn{animation:softIn .55s .40s cubic-bezier(.2,.8,.25,1) both}
+@keyframes softIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.login-card.is-unlocking{will-change:transform,opacity;animation:cardUnlock .54s cubic-bezier(.4,.06,.2,1) both}
 @keyframes cardUnlock{
-  0%{opacity:1;transform:none;filter:blur(0)}
-  30%{opacity:1;transform:translateY(-7px) scale(1.012);filter:blur(0)}
-  100%{opacity:0;transform:translateY(-30px) scale(1.075);filter:blur(10px)}
+  0%{opacity:1;transform:none}
+  30%{opacity:1;transform:translateY(-7px) scale(1.014)}
+  100%{opacity:0;transform:translateY(-26px) scale(1.07)}
 }
 .gateway-logo.is-unlocking{animation:logoLift .54s cubic-bezier(.4,.06,.2,1) both}
-@keyframes logoLift{to{opacity:0;transform:translateY(-18px) scale(.97);filter:blur(5px)}}
+@keyframes logoLift{to{opacity:0;transform:translateY(-16px) scale(.975)}}
 
 /* 2. a bloom of warm light carries the eye across the page swap */
 .unlock-veil{position:fixed;inset:0;z-index:80;pointer-events:none;opacity:0;
@@ -296,6 +312,14 @@ tr:hover td{background:rgba(243,235,221,.4)}
   .toast{white-space:normal;max-width:calc(100vw - 32px);text-align:center;line-height:1.35}
 }
 
+/* ---------- splash: wordmark only, while the health check runs ---------- */
+/* Letters land quickly and the rule is drawn up front, so the moment we morph
+   into the login screen nothing is half-played and nothing has to be cut. */
+.gateway--loading .gl{animation-duration:.52s;animation-delay:calc(.02s + var(--i) * .045s)}
+.gateway--loading .gl-rule{animation:none;transform:scaleX(1);opacity:.62}
+.gateway--loading::before{animation:none;opacity:.9;transition:opacity .4s ease}
+.gateway--loading .gateway-logo{animation:none}
+
 /* ---------- sign in (frosted glass) ---------- */
 .gateway--login .gateway-logo{animation:none}
 .gateway--login .gl{animation:none;opacity:1;transform:none}
@@ -308,10 +332,10 @@ tr:hover td{background:rgba(243,235,221,.4)}
   width:min(80vw,560px);height:min(80vw,560px);margin:calc(min(80vw,560px) / -2) 0 0 calc(min(80vw,560px) / -2);
   border-radius:50%;transform:translate(-16%,13%);
   background:
-    radial-gradient(circle at 34% 36%,rgba(158,42,43,.26) 0%,rgba(158,42,43,.10) 34%,rgba(158,42,43,0) 60%),
-    radial-gradient(circle at 68% 64%,rgba(74,107,83,.21) 0%,rgba(74,107,83,.06) 32%,rgba(74,107,83,0) 58%),
-    radial-gradient(circle at 50% 50%,rgba(221,161,94,.16) 0%,rgba(221,161,94,0) 68%);
-  filter:blur(8px);animation:glassDrift 22s ease-in-out infinite alternate}
+    radial-gradient(circle at 34% 36%,rgba(158,42,43,.26) 0%,rgba(158,42,43,.13) 22%,rgba(158,42,43,.05) 40%,rgba(158,42,43,0) 62%),
+    radial-gradient(circle at 68% 64%,rgba(74,107,83,.21) 0%,rgba(74,107,83,.09) 20%,rgba(74,107,83,.03) 38%,rgba(74,107,83,0) 60%),
+    radial-gradient(circle at 50% 50%,rgba(221,161,94,.16) 0%,rgba(221,161,94,.05) 40%,rgba(221,161,94,0) 70%);
+  animation:glassDrift 22s ease-in-out infinite alternate}
 @keyframes glassDrift{
   from{transform:translate(-16%,13%) scale(1)}
   to{transform:translate(-23%,8%) scale(1.07)}}
@@ -401,6 +425,9 @@ tr:hover td{background:rgba(243,235,221,.4)}
 }
 
 @media (prefers-reduced-motion: reduce){
+  .login-card.is-unfold,.login-card.is-unfold .login-icon,.login-card.is-unfold .login-title,
+  .login-card.is-unfold .login-sub,.login-card.is-unfold .login-pin,.login-card.is-unfold .login-msg,
+  .login-card.is-unfold .login-btn{animation:none}
   .gateway--login::after{animation:none}
   .login-card{animation:none}
   .login-card::after{display:none}

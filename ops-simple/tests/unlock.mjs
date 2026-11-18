@@ -44,6 +44,29 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 
 await page.goto(BASE, { waitUntil: 'load' });
+
+/* the splash must morph into the login in place — the wordmark node survives,
+   so no letter animation is cut and nothing is re-rastered */
+const splash = await until(async () => !!(await page.$('.gateway--loading .gateway-logo .gl')), 8000);
+if (splash) {
+  await page.evaluate(() => {
+    window.__logo = document.querySelector('.gateway-logo');
+    window.__letter = document.querySelector('.gateway--loading .gl');
+  });
+  await until(async () => !!(await page.$('.login-card')), 8000);
+  const morph = await page.evaluate(() => ({
+    sameLogo: window.__logo === document.querySelector('.gateway-logo'),
+    sameLetter: window.__letter === document.querySelector('.gateway--login .gl, .gateway--loading .gl'),
+    replay: getComputedStyle(document.querySelector('.gateway-logo .gl')).animationName,
+    unfold: document.querySelector('.login-card').classList.contains('is-unfold'),
+    wrap: document.querySelector('.gateway').className
+  }));
+  ok(morph.sameLogo && morph.sameLetter, 'splash morphs into login in place (same wordmark nodes)');
+  ok(morph.replay === 'none', 'letters do not restart mid-flight (animation: ' + morph.replay + ')');
+  ok(morph.unfold, 'login card unfolds under the gliding wordmark');
+  ok(/gateway--login/.test(morph.wrap) && !/gateway--loading/.test(morph.wrap), 'wrapper switches to the login layout');
+}
+
 ok(await until(async () => !!(await page.$('#f-login'))), 'PIN screen appears first');
 
 /* frame 0 — card idle, no veil, still on the gateway */

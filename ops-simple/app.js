@@ -31,7 +31,8 @@
     mode: 'local', token: '', status: 'local', err: '', busy: false,
     online: true, baseVersion: 0, baseData: null, dirty: false, saving: false,
     pullTimer: 0, pushTimer: 0, retries: 0,
-    pinDraft: '', shake: false, unlocking: false
+    pinDraft: '', shake: false, unlocking: false,
+    booted: false, splashAt: 0
   };
 
   function apiBase() {
@@ -214,16 +215,36 @@
   }
 
   function bootCloud() {
-    if (typeof fetch !== 'function') return;
-    if (!/^https?:$/.test(location.protocol)) return;
+    if (typeof fetch !== 'function' || !/^https?:$/.test(location.protocol)) {
+      cloud.booted = true;
+      render();                 /* leave the splash for the plain landing */
+      return;
+    }
+    /* Let the wordmark finish before anything replaces it — a swap at 200ms is
+       what made the old splash -> login hand-off feel broken. */
+    var LANDING_MS = 620;
+    function settle(fn) {
+      var left = Math.max(0, LANDING_MS - (Date.now() - (cloud.splashAt || Date.now())));
+      setTimeout(fn, left);
+    }
     api('health').then(function (h) {
-      if (!h || h.mode !== 'cloud') return;
+      if (!h || h.mode !== 'cloud') { cloud.mode = 'local'; cloud.booted = true; settle(render); return; }
       cloud.mode = 'cloud';
+      cloud.booted = true;
       cloud.token = localStorage.getItem(TOKEN_KEY) || '';
-      if (!cloud.token) { setStatus('signedout'); render(); return; }
+      if (!cloud.token) {
+        setStatus('signedout');
+        settle(function () {
+          if (!morphSplashToLogin()) enterLogin(true);
+          document.title = 'Sign in - makuru.';
+          var pin = document.querySelector('#f-login input[name=pin]');
+          if (pin) { pin.focus({ preventScroll: true }); try { pin.setSelectionRange(pin.value.length, pin.value.length); } catch (e) {} }
+        });
+        return;
+      }
       setStatus('syncing');
-      return pullState(true).then(function () { startPolling(); render(); });
-    }).catch(function () { cloud.mode = 'local'; });
+      return pullState(true).then(function () { startPolling(); settle(render); });
+    }).catch(function () { cloud.mode = 'local'; cloud.booted = true; settle(render); });
   }
 
   window.addEventListener('online', function () { if (cloud.mode === 'cloud' && cloud.token && cloud.dirty) pushState(true); });
@@ -348,21 +369,18 @@
     if (cloud.unlocking) return;                  /* the unlock owns the DOM */
     var r = route();
     var root = document.getElementById('root');
-    if (cloud.mode === 'cloud' && !cloud.token) {
-      root.innerHTML = loginScreen();
-      document.title = 'Sign in - makuru.';
-      var pinInput = root.querySelector('input[name=pin]');
-      if (pinInput) {
-        pinInput.focus({ preventScroll: true });
-        var n = pinInput.value.length;
-        try { pinInput.setSelectionRange(n, n); } catch (e) {}
-      }
-      return;
-    }
+    if (cloud.mode === 'cloud' && !cloud.token) { enterLogin(false); return; }
+    var booting = !cloud.booted && /^https?:$/.test(location.protocol);
     var fromLogin = enteringFromLogin;
     enteringFromLogin = false;
     var from = root.querySelector('.gateway') ? 'gateway' : (root.querySelector('.app') ? 'app' : '');
     if (nav && from && !fromLogin) snapshot(root, (from === 'app' && r) ? 'main' : 'all');
+    if (!r && booting) {
+      root.innerHTML = splash();
+      if (!cloud.splashAt) cloud.splashAt = Date.now();
+      document.title = 'makuru.';
+      return;
+    }
     if (!r) {
       root.innerHTML = gateway();
       document.title = 'makuru.';
@@ -502,11 +520,91 @@
     return '<div class="gateway"><div class="gateway-logo">' + logoHTML() + '</div>' +
       '<button class="btn btn--primary btn--lg" data-act="enter">Enter ' + icon('send', 18) + '</button></div>';
   }
-  function loginScreen() {
+  /* While the health check runs we show the wordmark alone — no Enter button
+     to remove later, no half-played animation to cut. */
+  function splash() {
+    return '<div class="gateway gateway--loading"><div class="gateway-logo">' + logoHTML() + '</div></div>';
+  }
+
+  /* Turn the splash into the login screen *in place* when we can: the wordmark
+     node survives, so no letter animation restarts and nothing is re-rastered.
+     The logo still travels (FLIP) because the layout below it changed. */
+  function morphSplashToLogin() {
+    var root = document.getElementById('root');
+    var wrap = root.querySelector('.gateway--loading');
+    var logo = wrap && wrap.querySelector('.gateway-logo');
+    var card = null;
+    if (!wrap || !logo) return false;
+
+    var before = logo.getBoundingClientRect();
+
+    wrap.classList.remove('gateway--loading');
+    wrap.classList.add('gateway--login');
+    card = document.createElement('div');
+    card.innerHTML = loginCardHTML();
+    card = card.firstChild;
+    wrap.appendChild(card);
+
+    var after = logo.getBoundingClientRect();
+    var dx = before.left - after.left;
+    var dy = before.top - after.top;
+    if (CAN_ANIM && (Math.abs(dx) > 1 || Math.abs(dy) > 1)) {
+      logo.style.transition = 'none';
+      logo.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
+      card.classList.add('is-unfold');
+      requestAnimationFrame(function () {
+        logo.style.transition = 'transform .68s cubic-bezier(.16,.84,.3,1)';
+        logo.style.transform = 'translate3d(0,0,0)';
+        setTimeout(function () { logo.style.transition = ''; logo.style.transform = ''; }, 780);
+      });
+    } else if (card) {
+      card.classList.add('is-unfold');
+    }
+    return true;
+  }
+
+  /* Full re-render path (wrong PIN, sign-out, later visits). */
+  function enterLogin(animate) {
+    var root = document.getElementById('root');
+    var prevLogo = root.querySelector('.gateway-logo');
+    var before = prevLogo ? prevLogo.getBoundingClientRect() : null;
+
+    root.innerHTML = loginScreen();
+    document.title = 'Sign in - makuru.';
+
+    var logo = root.querySelector('.gateway-logo');
+    var card = root.querySelector('.login-card');
+
+    if (animate && CAN_ANIM && before && logo) {
+      var after = logo.getBoundingClientRect();
+      var dx = before.left - after.left;
+      var dy = before.top - after.top;
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+        logo.style.transition = 'none';
+        logo.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
+        if (card) card.classList.add('is-unfold');
+        requestAnimationFrame(function () {
+          logo.style.transition = 'transform .68s cubic-bezier(.16,.84,.3,1)';
+          logo.style.transform = 'translate3d(0,0,0)';
+          setTimeout(function () { logo.style.transition = ''; logo.style.transform = ''; }, 760);
+        });
+      } else if (card) {
+        card.classList.add('is-unfold');
+      }
+    }
+
+    var pinInput = root.querySelector('input[name=pin]');
+    if (pinInput) {
+      pinInput.focus({ preventScroll: true });
+      var n = pinInput.value.length;
+      try { pinInput.setSelectionRange(n, n); } catch (e) {}
+    }
+  }
+
+  function loginCardHTML() {
     var shake = cloud.shake ? ' is-shake' : '';
     cloud.shake = false;
-    return '<div class="gateway gateway--login"><div class="gateway-logo">' + logoHTML() + '</div>' +
-      '<form class="login-card' + shake + '" id="f-login" autocomplete="on">' +
+    return '<form class="login-card' + shake + '" id="f-login" autocomplete="on">' +
       '<div class="login-icon">' + icon('lock', 18) + '</div>' +
       '<h1 class="login-title">Sign in</h1>' +
       '<p class="login-sub">Type the shop PIN. The same PIN works on every device.</p>' +
@@ -516,7 +614,12 @@
       (cloud.err ? esc(cloud.err) : '') + '</div>' +
       '<button class="btn btn--primary login-btn" type="submit" data-act="login"' + (cloud.busy ? ' disabled' : '') + '>' +
       (cloud.busy ? 'Checking...' : 'Sign in') + '</button>' +
-      '</form></div>';
+      '</form>';
+  }
+
+  function loginScreen() {
+    return '<div class="gateway gateway--login"><div class="gateway-logo">' + logoHTML() + '</div>' +
+      loginCardHTML() + '</div>';
   }
   function shell(r, content) {
     return '<div class="app"><aside class="sidebar"><div class="brand">makuru.</div>' +
