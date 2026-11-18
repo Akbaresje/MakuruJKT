@@ -119,6 +119,23 @@ ok(/6:45 pm/.test(text()), 'pickup time shows next to the date as 6:45 pm');
 ok(!!q('#f-order') === false, 'the form closed after saving');
 ok(!q('#paid-when') || q('#paid-when').classList.contains('hidden'), 'payment method stays hidden while unpaid');
 
+/* the pickup time can be changed later, from the order row */
+click('[data-act="order-time"]'); await wait();
+ok(!!q('#f-time'), 'the pickup time opens its own editor');
+ok(q('#f-time [name=time]').value === '18:45', 'the editor starts from the saved time');
+set('#f-time [name=time]', '17:30');
+click('[data-act="time-save"]'); await wait();
+const edited = db().orders.find(o => o.customer === 'Sari');
+ok(edited && edited.time === '17:30', 'the edited time is saved');
+ok(/5:30 pm/.test(text()), 'the row shows the new time');
+/* and it can be cleared again */
+click('[data-act="order-time"]'); await wait();
+set('#f-time [name=time]', '');
+click('[data-act="time-save"]'); await wait();
+const cleared = db().orders.find(o => o.customer === 'Sari');
+ok(cleared && cleared.time === '', 'the time can be cleared');
+ok(/Add time/.test(text()), 'a row without a time offers "Add time"');
+
 /* an order created as already paid records a real method, not the word Paid */
 click('[data-act="order-modal"]'); await wait();
 set('#f-order [name=customer]', 'Budi Santoso');

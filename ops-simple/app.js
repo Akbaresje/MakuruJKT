@@ -309,6 +309,7 @@
     undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>',
     edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
     lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     cloud: '<path d="M17.5 19a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.6-1.5A4 4 0 0 0 6.5 19Z"/>'
   };
   function icon(n, s) { s = s || 16; return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + ICON[n] + '</svg>'; }
@@ -777,7 +778,11 @@
     var seg = '<div class="seg">' + [['open', 'Open'], ['done', 'Delivered'], ['all', 'All']].map(function (f) { return '<button data-act="order-filter" data-f="' + f[0] + '" class="' + (ui.orderFilter === f[0] ? 'active' : '') + '">' + f[1] + '</button>'; }).join('') + '</div>';
     html += panel('Order list', '', list.length ? '<div class="tbl-wrap"><table class="tbl--orders"><thead><tr><th>Ref</th><th>Customer</th><th>Delivery</th><th class="col-items">Items</th><th class="num">Total</th><th>Paid</th><th>Status</th><th class="act">Actions</th></tr></thead><tbody>' +
       list.map(function (o) {
-        return '<tr><td class="td-main">' + esc(o.ref) + '</td><td><div class="td-main">' + esc(o.customer) + '</div><div class="td-sub">' + esc(phoneFmt(o.phone)) + (o.suburb ? ' - ' + esc(o.suburb) : '') + '</div></td><td>' + whenCell(o) + '</td>' +
+        return '<tr><td class="td-main">' + esc(o.ref) + '</td><td><div class="td-main">' + esc(o.customer) + '</div><div class="td-sub">' + esc(phoneFmt(o.phone)) + (o.suburb ? ' - ' + esc(o.suburb) : '') + '</div></td><td>' +
+          '<div>' + fmtDate(o.date) + '</div>' +
+          '<button class="btn btn--sm btn--ghost time-slot" data-act="order-time" data-id="' + o.id + '">' +
+            icon('clock', 13) + '<span>' + (fmtTime(o.time) || 'Add time') + '</span>' + icon('edit', 12) +
+          '</button></td>' +
           '<td class="col-items"><div class="td-sub" style="margin:0">' + o.items.map(function (i) { return num(i.qty) + ' x ' + esc(i.name); }).join('<br>') + '</div></td>' +
           '<td class="num"><b>' + money(o.total) + '</b></td><td>' + (o.paid ? '<span class="pill ok">Paid' + (o.pay ? ' - ' + esc(o.pay) : '') + '</span>' : '<span class="pill red">Not paid</span>') + '</td>' +
           '<td>' + (o.status === 'delivered' ? '<span class="pill ok">Delivered</span>' : '<span class="pill">Open</span>') + '</td>' +
@@ -883,6 +888,15 @@
     var t = 0;
     f.querySelectorAll('.order-item').forEach(function (r) { var p = product(r.querySelector('select').value); var q = Number(r.querySelector('input').value) || 0; if (p) t += p.price * q; });
     var el = document.getElementById('order-total'); if (el) el.textContent = money(t);
+  }
+  function timeModal(id) {
+    var o = byId(db.orders, id); if (!o) return;
+    modal('Pickup time: ' + o.ref, o.customer + ' - ' + fmtDate(o.date), form('f-time',
+      '<input type="hidden" name="id" value="' + o.id + '">' +
+      '<div class="row">' + field('Delivery date', input('date', { type: 'date', value: o.date })) +
+      field('Pickup time', input('time', { type: 'time', value: o.time || '' })) + '</div>' +
+      '<p class="hint">Leave the time empty if this order has no fixed pickup time.</p>' +
+      foot('Save time', 'time-save')));
   }
   function paidModal(id) {
     var o = byId(db.orders, id); if (!o) return;
@@ -997,6 +1011,12 @@
     'item-add': function () { var l = document.getElementById('items'); if (l) { l.insertAdjacentHTML('beforeend', orderItemRow()); updateOrderTotal(); } },
     'item-remove': function (b) { var rows = document.querySelectorAll('.order-item'); if (rows.length > 1) b.closest('.order-item').remove(); updateOrderTotal(); },
     'paid-toggle': function (b) { var box = document.getElementById('paid-when'); if (box) box.classList.toggle('hidden', !b.checked); },
+    'order-time': function (b) { timeModal(b.getAttribute('data-id')); },
+    'time-save': function (b, f) {
+      var v = vals(f), o = byId(db.orders, v.id); if (!o) return;
+      o.date = v.date || o.date; o.time = v.time || '';
+      save(); closeModal(); render(); toast(v.time ? 'Pickup ' + fmtTime(v.time) : 'Pickup time cleared');
+    },
     'order-save': function (b, f) {
       var v = vals(f); need(v.customer.trim(), 'Please type the customer name');
       var items = [], needMap = {};

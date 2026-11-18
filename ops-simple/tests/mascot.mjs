@@ -96,6 +96,17 @@ ok(calm.visible && calm.bob === 'none', 'reduced motion stops the bobbing but ke
 // 8. phones: smaller, out of the way of the action buttons, never swallowing taps
 const m = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 m.on('pageerror', e => errs.push('m:' + e.message));
+await m.addInitScript(() => {
+  try {
+    localStorage.setItem('makuru_simple_v1', JSON.stringify({
+      products: [{ id: 'p1', name: 'Siomay Ayam', price: 12, kitchen: 5 }], materials: [], shops: [],
+      orders: [{ id: 'o1', ref: 'ORD-001', customer: 'Mei Tan', phone: '0412345678', suburb: 'Belmore', date: '2026-11-18',
+        items: [{ product_id: 'p1', name: 'Siomay Ayam', qty: 2, price: 12 }], packs: 2, total: 24, paid: false, pay: '',
+        status: 'open', note: '', created: '2026-11-17T10:00:00.000Z' }],
+      sales: [], seq: { order: 2 },
+    }));
+  } catch (e) {}
+});
 await m.goto(U + '#/orders'); await wait(900);
 const mob = await m.evaluate(() => {
   const mk = document.querySelector('.mk--fixed');
@@ -114,6 +125,16 @@ ok(mob.w <= 68, 'mascot shrinks on a phone (' + mob.w + 'px)');
 ok(mob.right > mob.left, 'mascot moves to the left, off the action column');
 ok(mob.hitPointer === 'none', 'mascot cannot swallow a tap meant for a button');
 ok(mob.bubble === 'none', 'no speech bubble on a phone');
+// the order card carries the item list on a phone; the bun must not sit on it
+const card = await m.evaluate(() => {
+  const mk = document.querySelector('.mk--fixed').getBoundingClientRect();
+  const cells = [...document.querySelectorAll('.tbl--orders td:nth-child(4)')];
+  return cells.map(td => {
+    const r = td.getBoundingClientRect();
+    return { text: td.innerText.trim(), overlap: !(r.right < mk.left || r.left > mk.right || r.bottom < mk.top || r.top > mk.bottom) };
+  });
+});
+ok(card.every(c => !c.overlap), 'the mascot never covers the item list on a phone');
 const mw = mob.w;
 await m.screenshot({ path: 'shots-mascot/a02-mobile.png' });
 await m.evaluate(() => { location.hash = '#/materials'; }); await wait(900);

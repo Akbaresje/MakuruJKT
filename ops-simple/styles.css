@@ -327,7 +327,8 @@ tr:hover td{background:rgba(243,235,221,.4)}
   .side-foot{margin-top:0;flex-direction:row;margin-left:auto}
   .side-note{display:none}
   .nav.small span{display:none}
-  .main{padding:18px 16px calc(60px + env(safe-area-inset-bottom))}
+  /* the last card must never end up underneath the floating mascot */
+  .main{padding:18px 16px calc(104px + env(safe-area-inset-bottom))}
   .row,.row-3{grid-template-columns:1fr}
   .shop-grid{grid-template-columns:1fr}
   /* iOS zooms the whole page when a focused field is under 16px */
@@ -365,12 +366,21 @@ tr:hover td{background:rgba(243,235,221,.4)}
   .tbl--orders td:nth-child(5){grid-area:1/2;text-align:right;font-family:var(--display);font-size:16px}
   .tbl--orders td:nth-child(2){grid-area:2/1/3/3}
   .tbl--orders td:nth-child(3){grid-area:3/1;font-size:12.5px;color:var(--muted)}
-  .tbl--orders td:nth-child(6){grid-area:4/1;align-self:center}
-  .tbl--orders td:nth-child(7){grid-area:4/2;justify-self:end;align-self:center}
-  .tbl--orders td:nth-child(8){grid-area:5/1/6/3;display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+  .tbl--orders td:nth-child(7){grid-area:3/2;justify-self:end;align-self:start}
+  /* what is in the box: a quiet block, always visible, never truncated */
+  .tbl--orders td:nth-child(4){grid-area:4/1/5/3;margin:2px 0;padding:8px 11px;border-radius:12px;
+    background:rgba(243,235,221,.5);border:1px solid rgba(36,30,30,.05)}
+  .tbl--orders td:nth-child(4) .td-sub{font-size:12.5px;line-height:1.5}
+  .tbl--orders td:nth-child(6){grid-area:5/1;align-self:center}
+  .tbl--orders td:nth-child(8){grid-area:6/1/7/3;display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
   .tbl--orders td:nth-child(8) .btn{flex:1;justify-content:center;min-height:40px}
   .tbl--orders .td-sub{font-size:12.5px}
-  .col-items{display:none}
+  /* pickup time is a tap target, not just text */
+  .time-slot{padding:6px 10px 6px 8px;margin-left:-8px;gap:6px;min-height:34px;border-radius:10px;font-weight:500
+    ;background:rgba(255,255,255,.7);border:1px solid rgba(36,30,30,.08)}
+  .time-slot span{white-space:nowrap}
+  .time-slot:hover{background:#fff}
+  .tbl--orders td:nth-child(3) .time-slot{margin-top:4px}
 }
 .shop-grid .panel{display:flex;flex-direction:column}
 .shop-grid .panel > .tbl-wrap,.shop-grid .panel > .empty{flex:1}
