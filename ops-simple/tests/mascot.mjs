@@ -100,10 +100,13 @@ await m.addInitScript(() => {
   try {
     localStorage.setItem('makuru_simple_v1', JSON.stringify({
       products: [{ id: 'p1', name: 'Siomay Ayam', price: 12, kitchen: 5 }], materials: [], shops: [],
-      orders: [{ id: 'o1', ref: 'ORD-001', customer: 'Mei Tan', phone: '0412345678', suburb: 'Belmore', date: '2026-11-18',
+      orders: [{ id: 'o1', ref: 'ORD-001', customer: 'Mei Tan', phone: '0412345678', suburb: 'Belmore', date: '2026-11-18', time: '17:30',
         items: [{ product_id: 'p1', name: 'Siomay Ayam', qty: 2, price: 12 }], packs: 2, total: 24, paid: false, pay: '',
-        status: 'open', note: '', created: '2026-11-17T10:00:00.000Z' }],
-      sales: [], seq: { order: 2 },
+        status: 'open', note: '', created: '2026-11-17T10:00:00.000Z' },
+        { id: 'o2', ref: 'ORD-002', customer: 'Adi Putra', phone: '0498765432', suburb: 'Lakemba', date: '2026-11-19', time: '12:15',
+        items: [{ product_id: 'p1', name: 'Siomay Ayam', qty: 3, price: 12 }, { product_id: 'p1', name: 'Hakau Udang', qty: 1, price: 12 }],
+        packs: 4, total: 48, paid: false, pay: '', status: 'open', note: '', created: '2026-11-17T11:00:00.000Z' }],
+      sales: [], seq: { order: 3 },
     }));
   } catch (e) {}
 });
@@ -125,16 +128,42 @@ ok(mob.w <= 68, 'mascot shrinks on a phone (' + mob.w + 'px)');
 ok(mob.right > mob.left, 'mascot moves to the left, off the action column');
 ok(mob.hitPointer === 'none', 'mascot cannot swallow a tap meant for a button');
 ok(mob.bubble === 'none', 'no speech bubble on a phone');
-// the order card carries the item list on a phone; the bun must not sit on it
-const card = await m.evaluate(() => {
-  const mk = document.querySelector('.mk--fixed').getBoundingClientRect();
+// the order card carries the item list on a phone, so the bun has to give way
+const scrolled = await m.evaluate(() => {
   const cells = [...document.querySelectorAll('.tbl--orders td:nth-child(4)')];
-  return cells.map(td => {
-    const r = td.getBoundingClientRect();
-    return { text: td.innerText.trim(), overlap: !(r.right < mk.left || r.left > mk.right || r.bottom < mk.top || r.top > mk.bottom) };
-  });
+  const td = cells[cells.length - 1];
+  const r = td.getBoundingClientRect();
+  scrollBy(0, r.top + r.height / 2 - (innerHeight - 30)); // put the item list under him
+  return true;
 });
-ok(card.every(c => !c.overlap), 'the mascot never covers the item list on a phone');
+await wait(450);
+const yielded = await m.evaluate(() => {
+  const mk = document.querySelector('.mk--fixed');
+  const r = mk.getBoundingClientRect();
+  const cells = [...document.querySelectorAll('.tbl--orders td:nth-child(4)')];
+  const td = cells[cells.length - 1];
+  const c = td.getBoundingClientRect();
+  return {
+    cls: /mk-yield/.test(mk.className),
+    op: +getComputedStyle(mk).opacity,
+    geometric: !(c.right < r.left || c.left > r.right || c.bottom < r.top || c.top > r.bottom),
+    text: td.innerText.trim().replace(/\s+/g, ' '),
+  };
+});
+ok(scrolled && yielded.geometric, 'the item list really does slide under the bun (' + yielded.text + ')');
+ok(yielded.cls && yielded.op === 0, 'a card under the bun makes him step aside (opacity ' + yielded.op + ')');
+await m.screenshot({ path: 'shots-mascot/a02b-mobile-yield.png' });
+
+await m.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+await wait(520);
+const back = await m.evaluate(() => {
+  const mk = document.querySelector('.mk--fixed');
+  return { cls: /mk-yield/.test(mk.className), op: +getComputedStyle(mk).opacity };
+});
+ok(!back.cls && back.op > 0.8, 'he comes back over the empty space at the foot of the page (opacity ' + back.op + ')');
+await m.evaluate(() => scrollTo(0, 0));
+await wait(400);
+
 const mw = mob.w;
 await m.screenshot({ path: 'shots-mascot/a02-mobile.png' });
 await m.evaluate(() => { location.hash = '#/materials'; }); await wait(900);

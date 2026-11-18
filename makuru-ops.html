@@ -332,7 +332,11 @@ tr:hover td{background:rgba(243,235,221,.4)}
 }
 @media (max-width:820px){
   .app{grid-template-columns:1fr}
-  .sidebar{position:sticky;top:0;height:auto;flex-direction:row;align-items:center;gap:4px;padding:10px 12px;overflow-x:auto;z-index:10;border-right:0;border-bottom:1px solid var(--line)}
+  /* the bar is sticky and the page scrolls under it: at 62-80% white the stat
+     numbers ghosted straight through the wordmark. Cream and near-opaque keeps
+     the same look without a blur pass on every frame. */
+  .sidebar{position:sticky;top:0;height:auto;flex-direction:row;align-items:center;gap:4px;padding:10px 12px;overflow-x:auto;z-index:10;border-right:0;border-bottom:1px solid var(--line);
+    background:rgba(250,245,235,.985);box-shadow:0 12px 26px -24px rgba(36,30,30,.5)}
   .brand{padding:0 10px 0 4px;font-size:22px}
   .nav{width:auto;padding:8px 12px;white-space:nowrap}
   .side-foot{margin-top:0;flex-direction:row;margin-left:auto}
@@ -746,7 +750,13 @@ tr:hover td{background:rgba(243,235,221,.4)}
   /* stays small on phones even if a size was set inline.
      It sits bottom-left because the right edge is the sticky action column
      (Paid / Delivered / Delete): a floating bun there would eat those taps. */
-  .mk--fixed { left: 10px; right: auto; bottom: calc(8px + env(safe-area-inset-bottom)); --mk-max: 46px; opacity: .92; }
+  .mk--fixed {
+    left: 10px; right: auto; bottom: calc(8px + env(safe-area-inset-bottom)); --mk-max: 46px; opacity: .92;
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  /* a card sliding under him wins: he steps back, then returns over the empty
+     space at the foot of the page (see yieldCheck in mascot.js) */
+  .mk--fixed.mk-yield { opacity: 0; transform: translateY(12px) scale(.86); }
   /* decorative on phones: it must never intercept a tap meant for a button
      underneath it (Paid / Delivered / Delete live in that corner) */
   .mk--fixed .mk-hit { pointer-events: none; }
@@ -758,7 +768,7 @@ tr:hover td{background:rgba(243,235,221,.4)}
 
 /* ---------- reduced motion: calm, still cute ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .mk-bob, .mk-shadow, .mk-puff, .mk-hop, .mk-tilt, .mk-squash { animation: none !important; transition: none !important; }
+  .mk-bob, .mk-shadow, .mk-puff, .mk-hop, .mk-tilt, .mk-squash, .mk--fixed { animation: none !important; transition: none !important; }
   .mk-puff { opacity: .18; }
   .mk-squash { transform: none !important; }
 }
@@ -879,6 +889,34 @@ tr:hover td{background:rgba(243,235,221,.4)}
     }
   };
 
+  /* ---------- politeness guard ----------
+     On a phone the bun is fixed while the page scrolls under it, so sooner or
+     later a customer's item list lands exactly where he stands. A decoration
+     that covers the answer to "what did I order" is not decorative. While
+     anything readable sits underneath, he steps aside and comes back over the
+     empty space at the end of the page. */
+  var BUSY = 'table, .panel, .stat, .card, button, a, input, select, textarea, .field, .seg, .empty';
+  var PHONE = w.matchMedia ? w.matchMedia('(max-width: 720px)') : null;
+  Mascot.prototype.yieldCheck = function (box, now) {
+    /* desktop keeps placement A exactly as chosen: pinned bottom-right, always
+       there. The guard exists because a phone has no room to spare. */
+    if (!this.o.fixed) return;
+    if (PHONE && !PHONE.matches) {
+      if (this.yielded) { this.yielded = false; this.el.classList.remove('mk-yield'); }
+      return;
+    }
+    if (now - (this.checkedAt || 0) < 180) return;
+    this.checkedAt = now;
+    var y = box.top + box.height * 0.55;
+    if (y < 0 || y > innerHeight) return;
+    var under = document.elementFromPoint(box.left + box.width / 2, y);
+    var busy = !!(under && !under.closest('.mk') && under.closest(BUSY));
+    if (busy !== this.yielded) {
+      this.yielded = busy;
+      this.el.classList.toggle('mk-yield', busy);
+    }
+  };
+
   /* ---------- eye loop ---------- */
   Mascot.prototype.step = function (now) {
     var box = this.el.getBoundingClientRect();
@@ -914,6 +952,8 @@ tr:hover td{background:rgba(243,235,221,.4)}
     this.tiltT = clamp((POINTER.active ? dx : this.tx * 60) / 900, -1, 1) * 4.5;
     this.tilt += (this.tiltT - this.tilt) * 0.09;
     this.el.querySelector('.mk-tilt').style.transform = 'rotate(' + this.tilt.toFixed(2) + 'deg)';
+
+    this.yieldCheck(box, now);
   };
 
   /* ---------- blink ---------- */

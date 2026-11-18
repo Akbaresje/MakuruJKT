@@ -321,7 +321,11 @@ tr:hover td{background:rgba(243,235,221,.4)}
 }
 @media (max-width:820px){
   .app{grid-template-columns:1fr}
-  .sidebar{position:sticky;top:0;height:auto;flex-direction:row;align-items:center;gap:4px;padding:10px 12px;overflow-x:auto;z-index:10;border-right:0;border-bottom:1px solid var(--line)}
+  /* the bar is sticky and the page scrolls under it: at 62-80% white the stat
+     numbers ghosted straight through the wordmark. Cream and near-opaque keeps
+     the same look without a blur pass on every frame. */
+  .sidebar{position:sticky;top:0;height:auto;flex-direction:row;align-items:center;gap:4px;padding:10px 12px;overflow-x:auto;z-index:10;border-right:0;border-bottom:1px solid var(--line);
+    background:rgba(250,245,235,.985);box-shadow:0 12px 26px -24px rgba(36,30,30,.5)}
   .brand{padding:0 10px 0 4px;font-size:22px}
   .nav{width:auto;padding:8px 12px;white-space:nowrap}
   .side-foot{margin-top:0;flex-direction:row;margin-left:auto}

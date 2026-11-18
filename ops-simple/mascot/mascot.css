@@ -195,7 +195,13 @@
   /* stays small on phones even if a size was set inline.
      It sits bottom-left because the right edge is the sticky action column
      (Paid / Delivered / Delete): a floating bun there would eat those taps. */
-  .mk--fixed { left: 10px; right: auto; bottom: calc(8px + env(safe-area-inset-bottom)); --mk-max: 46px; opacity: .92; }
+  .mk--fixed {
+    left: 10px; right: auto; bottom: calc(8px + env(safe-area-inset-bottom)); --mk-max: 46px; opacity: .92;
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  /* a card sliding under him wins: he steps back, then returns over the empty
+     space at the foot of the page (see yieldCheck in mascot.js) */
+  .mk--fixed.mk-yield { opacity: 0; transform: translateY(12px) scale(.86); }
   /* decorative on phones: it must never intercept a tap meant for a button
      underneath it (Paid / Delivered / Delete live in that corner) */
   .mk--fixed .mk-hit { pointer-events: none; }
@@ -207,7 +213,7 @@
 
 /* ---------- reduced motion: calm, still cute ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .mk-bob, .mk-shadow, .mk-puff, .mk-hop, .mk-tilt, .mk-squash { animation: none !important; transition: none !important; }
+  .mk-bob, .mk-shadow, .mk-puff, .mk-hop, .mk-tilt, .mk-squash, .mk--fixed { animation: none !important; transition: none !important; }
   .mk-puff { opacity: .18; }
   .mk-squash { transform: none !important; }
 }

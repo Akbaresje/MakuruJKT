@@ -111,6 +111,34 @@
     }
   };
 
+  /* ---------- politeness guard ----------
+     On a phone the bun is fixed while the page scrolls under it, so sooner or
+     later a customer's item list lands exactly where he stands. A decoration
+     that covers the answer to "what did I order" is not decorative. While
+     anything readable sits underneath, he steps aside and comes back over the
+     empty space at the end of the page. */
+  var BUSY = 'table, .panel, .stat, .card, button, a, input, select, textarea, .field, .seg, .empty';
+  var PHONE = w.matchMedia ? w.matchMedia('(max-width: 720px)') : null;
+  Mascot.prototype.yieldCheck = function (box, now) {
+    /* desktop keeps placement A exactly as chosen: pinned bottom-right, always
+       there. The guard exists because a phone has no room to spare. */
+    if (!this.o.fixed) return;
+    if (PHONE && !PHONE.matches) {
+      if (this.yielded) { this.yielded = false; this.el.classList.remove('mk-yield'); }
+      return;
+    }
+    if (now - (this.checkedAt || 0) < 180) return;
+    this.checkedAt = now;
+    var y = box.top + box.height * 0.55;
+    if (y < 0 || y > innerHeight) return;
+    var under = document.elementFromPoint(box.left + box.width / 2, y);
+    var busy = !!(under && !under.closest('.mk') && under.closest(BUSY));
+    if (busy !== this.yielded) {
+      this.yielded = busy;
+      this.el.classList.toggle('mk-yield', busy);
+    }
+  };
+
   /* ---------- eye loop ---------- */
   Mascot.prototype.step = function (now) {
     var box = this.el.getBoundingClientRect();
@@ -146,6 +174,8 @@
     this.tiltT = clamp((POINTER.active ? dx : this.tx * 60) / 900, -1, 1) * 4.5;
     this.tilt += (this.tiltT - this.tilt) * 0.09;
     this.el.querySelector('.mk-tilt').style.transform = 'rotate(' + this.tilt.toFixed(2) + 'deg)';
+
+    this.yieldCheck(box, now);
   };
 
   /* ---------- blink ---------- */
