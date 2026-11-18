@@ -83,12 +83,42 @@ ok(db().orders.length === 1 && db().orders[0].ref === 'ORD-001' && db().orders[0
 ok(/0412 345 678/.test(text()), 'phone shown as 04xx xxx xxx');
 click('[data-act="order-modal"]'); await wait(); q('.order-item input').value = 50; click('[data-act="order-save"]'); await wait();
 ok(db().orders.length === 1 && q('#modal'), 'order blocked when not enough stock'); click('[data-act="close"]'); await wait();
+
+/* an unpaid order can never be delivered */
+ok(!q('[data-act="order-deliver"]'), 'no Delivered button while the order is unpaid');
+ok(!!q('[data-act="paid-modal"]'), 'Paid is the one available action while unpaid');
+// forge a stale button, as if an old render were still on screen, and click it
+const stale = document.createElement('button');
+stale.setAttribute('data-act', 'order-deliver');
+stale.setAttribute('data-id', db().orders[0].id);
+document.body.appendChild(stale);
+stale.click(); await wait();
+ok(db().orders[0].status === 'open', 'delivering an unpaid order is refused even if the button is forced');
+ok(/Mark as paid first/.test(text()), 'the refusal explains itself');
+stale.remove();
+
 click('[data-act="paid-modal"]'); await wait(); click('[data-act="paid-save"]'); await wait();
 ok(db().orders[0].paid && /PayID/.test(text()), 'order marked paid');
+ok(!!q('[data-act="order-deliver"]'), 'Delivered button appears once the order is paid');
 click('[data-act="order-deliver"]'); await wait();
 ok(db().orders[0].status === 'delivered', 'order delivered');
 click('[data-act="order-filter"][data-f="done"]'); await wait();
 ok(/ORD-001/.test(text()), 'delivered filter shows order');
+ok(!q('[data-act="order-deliver"]'), 'a delivered order offers no Delivered button');
+
+/* an order created as already paid records a real method, not the word Paid */
+click('[data-act="order-filter"][data-f="open"]'); await wait();
+click('[data-act="order-modal"]'); await wait();
+set('#f-order [name=customer]', 'Budi Santoso');
+q('#f-order [name=paid]').click(); await wait();
+ok(!q('#paid-when').classList.contains('hidden'), 'choosing Already paid reveals the payment method');
+const method = q('#paid-when select'); if (method) method.value = 'Bank transfer';
+click('[data-act="order-save"]'); await wait();
+ok(db().orders[1].paid && db().orders[1].pay === 'Bank transfer', 'already paid order keeps its payment method');
+ok(!/Paid - Paid/.test(text()), 'no duplicated Paid label');
+click('[data-act="order-filter"][data-f="all"]'); await wait();
+click('[data-act="order-del-ask"]'); await wait(); click('[data-act="order-del"]'); await wait();
+ok(db().orders.length === 1, 'first order deleted');
 click('[data-act="order-del-ask"]'); await wait(); click('[data-act="order-del"]'); await wait();
 ok(db().orders.length === 0, 'order deleted');
 

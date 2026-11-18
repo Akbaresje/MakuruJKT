@@ -141,9 +141,11 @@ void backToLogin;
 await wait(500);
 const hasLogin = !!(await page.$('#f-login'));
 if (hasLogin) {
-  await page.fill('input[name=pin]', PIN);
-  await page.click('[data-act="login"]');
-  await page.click('[data-act="login"]').catch(() => {});
+  // the card is still finishing its softIn stagger here, so force the
+  // interaction instead of waiting for a "stable" element
+  await page.fill('input[name=pin]', PIN, { force: true });
+  await page.click('[data-act="login"]', { force: true });
+  await page.click('[data-act="login"]', { force: true }).catch(() => {});
   await wait(1900);
   ok(!!(await page.$('.app .main')), 'double-clicking Sign in still lands on one app, no stuck state');
 } else {

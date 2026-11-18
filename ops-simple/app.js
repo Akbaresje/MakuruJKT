@@ -767,8 +767,9 @@
           '<td><div class="td-sub" style="margin:0">' + o.items.map(function (i) { return num(i.qty) + ' x ' + esc(i.name); }).join('<br>') + '</div></td>' +
           '<td class="num"><b>' + money(o.total) + '</b></td><td>' + (o.paid ? '<span class="pill ok">Paid' + (o.pay ? ' - ' + esc(o.pay) : '') + '</span>' : '<span class="pill red">Not paid</span>') + '</td>' +
           '<td>' + (o.status === 'delivered' ? '<span class="pill ok">Delivered</span>' : '<span class="pill">Open</span>') + '</td>' +
-          '<td class="act">' + (o.paid ? '' : '<button class="btn btn--sm" data-act="paid-modal" data-id="' + o.id + '">' + icon('check', 14) + 'Paid</button>') +
-          (o.status === 'delivered' ? '' : '<button class="btn btn--sm" data-act="order-deliver" data-id="' + o.id + '">' + icon('send', 14) + 'Delivered</button>') +
+          /* the next step is always the red button: paid first, delivered only after */
+          '<td class="act">' + (o.paid ? '' : '<button class="btn btn--sm btn--primary" data-act="paid-modal" data-id="' + o.id + '">' + icon('check', 14) + 'Paid</button>') +
+          ((o.status === 'delivered' || !o.paid) ? '' : '<button class="btn btn--sm btn--primary" data-act="order-deliver" data-id="' + o.id + '">' + icon('send', 14) + 'Delivered</button>') +
           '<button class="btn btn--sm btn--danger" data-act="order-del-ask" data-id="' + o.id + '">' + icon('trash', 14) + 'Delete</button></td></tr>';
       }).join('') + '</tbody></table></div>' : emptyBox('No orders here', ui.orderFilter === 'open' ? 'Open orders will show here.' : 'Nothing to show.', db.products.length ? 'New order' : '', 'order-modal'), seg);
     return html;
@@ -857,7 +858,8 @@
       '<div class="row">' + field('Suburb / pickup', input('suburb', { ph: 'e.g. Lakemba or Pickup' })) + field('Delivery date', input('date', { type: 'date', value: today() })) + '</div>' +
       '<div class="field"><label>Items</label><div class="items-list" id="items">' + orderItemRow() + '</div><button type="button" class="btn btn--sm" style="margin-top:8px" data-act="item-add">' + icon('plus', 14) + 'Add another item</button></div>' +
       '<div class="total-line"><span>Total</span><span id="order-total">$0.00</span></div>' +
-      '<label class="check"><input type="checkbox" name="paid"> Already paid</label>' +
+      '<label class="check"><input type="checkbox" name="paid" data-act="paid-toggle"> Already paid</label>' +
+      '<div class="hidden" id="paid-when">' + field('Paid with', select('pay', [['PayID', 'PayID'], ['Bank transfer', 'Bank transfer'], ['Cash', 'Cash']])) + '</div>' +
       field('Note (optional)', input('note', { ph: 'e.g. no chili' })) +
       foot('Save order', 'order-save')), true);
     updateOrderTotal();
@@ -980,6 +982,7 @@
     'order-modal': function () { if (!db.products.length) { toast('Add a product first', true); return; } orderModal(); },
     'item-add': function () { var l = document.getElementById('items'); if (l) { l.insertAdjacentHTML('beforeend', orderItemRow()); updateOrderTotal(); } },
     'item-remove': function (b) { var rows = document.querySelectorAll('.order-item'); if (rows.length > 1) b.closest('.order-item').remove(); updateOrderTotal(); },
+    'paid-toggle': function (b) { var box = document.getElementById('paid-when'); if (box) box.classList.toggle('hidden', !b.checked); },
     'order-save': function (b, f) {
       var v = vals(f); need(v.customer.trim(), 'Please type the customer name');
       var items = [], needMap = {};
@@ -994,13 +997,18 @@
       items.forEach(function (i) { product(i.product_id).kitchen -= i.qty; });
       var total = items.reduce(function (a, i) { return a + i.price * i.qty; }, 0);
       var ref = 'ORD-' + String(db.seq.order++).padStart(3, '0');
-      db.orders.push({ id: uid(), ref: ref, customer: v.customer.trim(), phone: v.phone.trim(), suburb: v.suburb.trim(), date: v.date || today(), items: items, packs: items.reduce(function (a, i) { return a + i.qty; }, 0), total: Math.round(total * 100) / 100, paid: !!v.paid, pay: v.paid ? 'Paid' : '', status: 'open', note: v.note.trim(), created: new Date().toISOString() });
+      db.orders.push({ id: uid(), ref: ref, customer: v.customer.trim(), phone: v.phone.trim(), suburb: v.suburb.trim(), date: v.date || today(), items: items, packs: items.reduce(function (a, i) { return a + i.qty; }, 0), total: Math.round(total * 100) / 100, paid: !!v.paid, pay: v.paid ? (v.pay || 'Paid') : '', status: 'open', note: v.note.trim(), created: new Date().toISOString() });
       ui.orderFilter = 'open';
       save(); closeModal(); render(); toast('Order ' + ref + ' saved'); mkHop('Order saved.');
     },
     'paid-modal': function (b) { paidModal(b.getAttribute('data-id')); },
     'paid-save': function (b, f) { var v = vals(f), o = byId(db.orders, v.id); if (o) { o.paid = true; o.pay = v.pay; } save(); closeModal(); render(); toast('Marked as paid'); },
-    'order-deliver': function (b) { var o = byId(db.orders, b.getAttribute('data-id')); if (o) o.status = 'delivered'; save(); render(); toast('Marked as delivered'); },
+    'order-deliver': function (b) {
+      var o = byId(db.orders, b.getAttribute('data-id')); if (!o) return;
+      /* an order may never leave the kitchen unpaid */
+      if (!o.paid) { toast('Mark as paid first', true); return; }
+      o.status = 'delivered'; save(); render(); toast('Marked as delivered');
+    },
     'order-del-ask': function (b) { var o = byId(db.orders, b.getAttribute('data-id')); confirmDelete('order ' + o.ref, 'order-del', o.id, o.status === 'delivered' ? 'The order will be removed from the list.' : 'Packs go back to kitchen stock.'); },
     'order-del': function (b) {
       var id = b.getAttribute('data-id'), o = byId(db.orders, id); if (!o) return;
