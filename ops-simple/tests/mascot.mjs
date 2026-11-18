@@ -93,12 +93,28 @@ const calm = await rm.evaluate(() => {
 });
 ok(calm.visible && calm.bob === 'none', 'reduced motion stops the bobbing but keeps the mascot');
 
-// 8. phones: 88px, lifted, toast readable
+// 8. phones: smaller, out of the way of the action buttons, never swallowing taps
 const m = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 m.on('pageerror', e => errs.push('m:' + e.message));
-await m.goto(U + '#/stock'); await wait(900);
-const mw = await m.$eval('.mk--fixed', e => Math.round(e.getBoundingClientRect().width));
-ok(mw === 88, 'mascot shrinks to 88px on a phone');
+await m.goto(U + '#/orders'); await wait(900);
+const mob = await m.evaluate(() => {
+  const mk = document.querySelector('.mk--fixed');
+  const r = mk.getBoundingClientRect();
+  const hit = mk.querySelector('.mk-hit');
+  const bubble = mk.querySelector('.mk-bubble');
+  return {
+    w: Math.round(r.width),
+    left: Math.round(r.left),
+    right: Math.round(innerWidth - r.right),
+    hitPointer: getComputedStyle(hit).pointerEvents,
+    bubble: getComputedStyle(bubble).display,
+  };
+});
+ok(mob.w <= 68, 'mascot shrinks on a phone (' + mob.w + 'px)');
+ok(mob.right > mob.left, 'mascot moves to the left, off the action column');
+ok(mob.hitPointer === 'none', 'mascot cannot swallow a tap meant for a button');
+ok(mob.bubble === 'none', 'no speech bubble on a phone');
+const mw = mob.w;
 await m.screenshot({ path: 'shots-mascot/a02-mobile.png' });
 await m.evaluate(() => { location.hash = '#/materials'; }); await wait(900);
 await m.screenshot({ path: 'shots-mascot/a03-mobile-materials.png' });

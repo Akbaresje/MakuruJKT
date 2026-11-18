@@ -39,7 +39,7 @@ svg{display:block;flex:none}
 .hidden{display:none !important}
 
 /* gateway */
-.gateway{position:relative;height:100vh;width:100%;overflow:hidden;display:grid;place-items:center;background:var(--bg);isolation:isolate}
+.gateway{position:relative;height:100vh;height:100dvh;width:100%;overflow:hidden;display:grid;place-items:center;background:var(--bg);isolation:isolate}
 /* a soft warm halo that breathes behind the wordmark */
 .gateway::before{content:"";position:absolute;top:50%;left:50%;width:min(78vw,660px);height:min(78vw,660px);margin:calc(min(78vw,660px) / -2) 0 0 calc(min(78vw,660px) / -2);border-radius:50%;z-index:0;pointer-events:none;
   background:radial-gradient(circle at 50% 50%,rgba(221,161,94,.11) 0%,rgba(221,161,94,.055) 38%,rgba(221,161,94,.02) 58%,rgba(221,161,94,0) 72%);
@@ -299,8 +299,12 @@ tr:hover td{background:rgba(243,235,221,.4)}
 .total-line{display:flex;justify-content:space-between;font-weight:700;padding:10px 0 0;border-top:1px solid var(--line);margin-top:4px}
 
 /* modal */
-.scrim{position:fixed;inset:0;background:rgba(36,30,30,.45);display:grid;place-items:center;padding:20px;z-index:50;animation:fade .15s ease}
-.dialog{border:1px solid var(--glass-line);border-radius:var(--r-pane);width:100%;max-width:520px;max-height:92vh;overflow:auto;
+.scrim{position:fixed;inset:0;background:rgba(36,30,30,.45);display:grid;place-items:center;z-index:50;animation:fade .15s ease;
+  padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom))}
+/* dvh = the height that is actually visible; on phones the browser bar used to
+   swallow the last 90-200px of this box, which hid the submit button */
+.dialog{border:1px solid var(--glass-line);border-radius:var(--r-pane);width:100%;max-width:520px;overflow:auto;
+  max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   background:linear-gradient(162deg,rgba(255,255,255,.96),rgba(255,255,255,.86));
   box-shadow:inset 0 1px 0 #fff,0 40px 80px -34px rgba(36,30,30,.42);animation:pop .18s ease}
 .dialog--wide{max-width:680px}
@@ -308,13 +312,18 @@ tr:hover td{background:rgba(243,235,221,.4)}
 .dialog-head h3{font-size:18px;font-weight:700}
 .dialog-head p{color:var(--muted);font-size:13px;margin-top:2px}
 .dialog-body{padding:18px 22px 22px}
+/* the action row sticks to the bottom of the sheet: Cancel / Save are always reachable,
+   even when the form is taller than the phone screen */
+.form-foot{position:sticky;bottom:0;margin:14px -22px -22px;padding:12px 22px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.97) 42%);
+  border-top:1px solid rgba(36,30,30,.07);z-index:1}
 .close{width:32px;height:32px;border-radius:9999px;display:grid;place-items:center;color:var(--muted);transition:background .18s,transform .28s cubic-bezier(.2,.8,.25,1)}
 .close:hover{transform:rotate(90deg)}
 .close:hover{background:var(--alt)}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
 
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:9999px;font-size:13px;font-weight:600;z-index:60;animation:fade .2s ease;white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:9999px;font-size:13px;font-weight:600;z-index:60;animation:fade .2s ease;white-space:nowrap}
 .toast.err{background:var(--red)}
 
 @media (max-width:980px){
@@ -329,14 +338,50 @@ tr:hover td{background:rgba(243,235,221,.4)}
   .side-foot{margin-top:0;flex-direction:row;margin-left:auto}
   .side-note{display:none}
   .nav.small span{display:none}
-  .main{padding:18px 16px 60px}
+  .main{padding:18px 16px calc(60px + env(safe-area-inset-bottom))}
   .row,.row-3{grid-template-columns:1fr}
   .shop-grid{grid-template-columns:1fr}
+  /* iOS zooms the whole page when a focused field is under 16px */
+  .input,select.input,textarea.input,.login-pin{font-size:16px}
+  /* thumbs, not cursors: every tappable row action gets a real target */
+  .btn{padding:11px 16px}
+  .btn--sm{padding:9px 12px;font-size:12.5px;min-height:38px}
+  .seg{padding:3px}
+  .seg button{padding:8px 14px;min-height:34px}
+  .td.act .btn{margin-left:6px}
+  .td.act .btn:last-child{margin-left:0}
+  .nav{padding:10px 12px}
+  /* the sheet is a bottom sheet on phones: title stays, actions stay, the middle scrolls */
+  .scrim{padding:8px}
+  .dialog{max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);border-radius:20px}
+  .dialog-head{padding:16px 18px 12px;position:sticky;top:0;background:rgba(255,255,255,.96);z-index:2}
+  .dialog-body{padding:14px 18px 18px}
+  .form-foot{bottom:0;margin:12px -18px -18px;padding:12px 18px calc(12px + env(safe-area-inset-bottom))}
+  .form-foot .btn{flex:1;justify-content:center}
+  .toast{white-space:normal;max-width:calc(100vw - 32px);text-align:center}
 }
 @media (max-width:560px){
   .stats{grid-template-columns:1fr 1fr}
   .stat .value{font-size:26px}
   .page-head h1{font-size:24px}
+  /* orders become cards on a phone: seven columns never fit 390px, and a sideways
+     scroll hides the very buttons you came for */
+  .tbl--orders thead{display:none}
+  .tbl--orders,.tbl--orders tbody,.tbl--orders tr,.tbl--orders td{display:block;width:auto}
+  .tbl--orders tr{display:grid;grid-template-columns:1fr auto;gap:6px 10px;padding:14px 16px;border-top:1px solid rgba(36,30,30,.07)}
+  .tbl--orders tr:first-child{border-top:0}
+  .tbl--orders td{padding:0;border:0;background:none}
+  .tbl--orders tr:hover{background:transparent}
+  .tbl--orders td:nth-child(1){grid-area:1/1;font-weight:700;white-space:nowrap;color:var(--red)}
+  .tbl--orders td:nth-child(5){grid-area:1/2;text-align:right;font-family:var(--display);font-size:16px}
+  .tbl--orders td:nth-child(2){grid-area:2/1/3/3}
+  .tbl--orders td:nth-child(3){grid-area:3/1;font-size:12.5px;color:var(--muted)}
+  .tbl--orders td:nth-child(6){grid-area:4/1;align-self:center}
+  .tbl--orders td:nth-child(7){grid-area:4/2;justify-self:end;align-self:center}
+  .tbl--orders td:nth-child(8){grid-area:5/1/6/3;display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+  .tbl--orders td:nth-child(8) .btn{flex:1;justify-content:center;min-height:40px}
+  .tbl--orders .td-sub{font-size:12.5px}
+  .col-items{display:none}
 }
 .shop-grid .panel{display:flex;flex-direction:column}
 .shop-grid .panel > .tbl-wrap,.shop-grid .panel > .empty{flex:1}
@@ -688,8 +733,17 @@ tr:hover td{background:rgba(243,235,221,.4)}
 
 /* ---------- small screens ---------- */
 @media (max-width: 720px) {
-  /* stays small on phones even if a size was set inline */
-  .mk--fixed { right: 14px; bottom: 16px; --mk-max: 88px; }
+  /* stays small on phones even if a size was set inline.
+     It sits bottom-left because the right edge is the sticky action column
+     (Paid / Delivered / Delete): a floating bun there would eat those taps. */
+  .mk--fixed { left: 10px; right: auto; bottom: calc(8px + env(safe-area-inset-bottom)); --mk-max: 58px; }
+  /* decorative on phones: it must never intercept a tap meant for a button
+     underneath it (Paid / Delivered / Delete live in that corner) */
+  .mk--fixed .mk-hit { pointer-events: none; }
+  /* no speech bubble on phones: an 88px-wide card row leaves no free space that
+     a floating bubble can occupy without covering a button. The bun stays, and
+     it still reacts when tapped. */
+  .mk--fixed .mk-bubble { display: none; }
 }
 
 /* ---------- reduced motion: calm, still cute ---------- */
@@ -1210,6 +1264,20 @@ tr:hover td{background:rgba(243,235,221,.4)}
   function money(n) { return '$' + (Number(n) || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function num(n) { var v = Number(n) || 0; return v % 1 === 0 ? String(v) : v.toFixed(2).replace(/0+$/, '').replace(/\.$/, ''); }
   function today() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  /* "14:30" -> "2:30 pm"; anything else is shown as typed */
+  function fmtTime(t) {
+    if (!t) return '';
+    var p = String(t).split(':'); if (p.length < 2) return t;
+    var h = Number(p[0]), m = Number(p[1]); if (isNaN(h) || isNaN(m)) return t;
+    var ap = h >= 12 ? 'pm' : 'am';
+    var h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ':' + (m < 10 ? '0' + m : m) + ' ' + ap;
+  }
+  /* date cell: the date, with the pickup time underneath when there is one */
+  function whenCell(o) {
+    var t = fmtTime(o.time);
+    return fmtDate(o.date) + (t ? '<div class="td-sub">' + t + '</div>' : '');
+  }
   function fmtDate(iso) {
     if (!iso) return '-';
     var p = iso.split('-'); if (p.length < 3) return iso;
@@ -1612,7 +1680,7 @@ tr:hover td{background:rgba(243,235,221,.4)}
       '</tbody></table></div>' : emptyBox('No products', 'Add a dimsum product to start tracking stock.', 'Add product', 'product-modal'),
       '<button class="btn btn--sm" data-act="go" data-to="stock">Open</button>');
     html += panel('Open orders', 'Not delivered yet', openOrders.length ? '<div class="tbl-wrap"><table><thead><tr><th>Ref</th><th>Customer</th><th>Delivery</th><th class="num">Total</th></tr></thead><tbody>' +
-      openOrders.slice(0, 8).map(function (o) { return '<tr><td class="td-main">' + esc(o.ref) + '</td><td>' + esc(o.customer) + '<div class="td-sub">' + esc(o.suburb) + '</div></td><td>' + fmtDate(o.date) + '</td><td class="num">' + money(o.total) + '</td></tr>'; }).join('') +
+      openOrders.slice(0, 8).map(function (o) { return '<tr><td class="td-main">' + esc(o.ref) + '</td><td>' + esc(o.customer) + '<div class="td-sub">' + esc(o.suburb) + '</div></td><td>' + whenCell(o) + '</td><td class="num">' + money(o.total) + '</td></tr>'; }).join('') +
       '</tbody></table></div>' : emptyBox('No open orders', 'New orders will show here.', 'New order', 'order-modal'),
       '<button class="btn btn--sm" data-act="go" data-to="orders">Open</button>');
     html += '</div>';
@@ -1712,10 +1780,10 @@ tr:hover td{background:rgba(243,235,221,.4)}
       stat('Total sales', money(totalSales), 'Paid orders + shop sales', false, { n: totalSales, k: 'money' }) +
       '</div>';
     var seg = '<div class="seg">' + [['open', 'Open'], ['done', 'Delivered'], ['all', 'All']].map(function (f) { return '<button data-act="order-filter" data-f="' + f[0] + '" class="' + (ui.orderFilter === f[0] ? 'active' : '') + '">' + f[1] + '</button>'; }).join('') + '</div>';
-    html += panel('Order list', '', list.length ? '<div class="tbl-wrap"><table><thead><tr><th>Ref</th><th>Customer</th><th>Delivery</th><th>Items</th><th class="num">Total</th><th>Paid</th><th>Status</th><th class="act">Actions</th></tr></thead><tbody>' +
+    html += panel('Order list', '', list.length ? '<div class="tbl-wrap"><table class="tbl--orders"><thead><tr><th>Ref</th><th>Customer</th><th>Delivery</th><th class="col-items">Items</th><th class="num">Total</th><th>Paid</th><th>Status</th><th class="act">Actions</th></tr></thead><tbody>' +
       list.map(function (o) {
-        return '<tr><td class="td-main">' + esc(o.ref) + '</td><td><div class="td-main">' + esc(o.customer) + '</div><div class="td-sub">' + esc(phoneFmt(o.phone)) + (o.suburb ? ' - ' + esc(o.suburb) : '') + '</div></td><td>' + fmtDate(o.date) + '</td>' +
-          '<td><div class="td-sub" style="margin:0">' + o.items.map(function (i) { return num(i.qty) + ' x ' + esc(i.name); }).join('<br>') + '</div></td>' +
+        return '<tr><td class="td-main">' + esc(o.ref) + '</td><td><div class="td-main">' + esc(o.customer) + '</div><div class="td-sub">' + esc(phoneFmt(o.phone)) + (o.suburb ? ' - ' + esc(o.suburb) : '') + '</div></td><td>' + whenCell(o) + '</td>' +
+          '<td class="col-items"><div class="td-sub" style="margin:0">' + o.items.map(function (i) { return num(i.qty) + ' x ' + esc(i.name); }).join('<br>') + '</div></td>' +
           '<td class="num"><b>' + money(o.total) + '</b></td><td>' + (o.paid ? '<span class="pill ok">Paid' + (o.pay ? ' - ' + esc(o.pay) : '') + '</span>' : '<span class="pill red">Not paid</span>') + '</td>' +
           '<td>' + (o.status === 'delivered' ? '<span class="pill ok">Delivered</span>' : '<span class="pill">Open</span>') + '</td>' +
           /* the next step is always the red button: paid first, delivered only after */
@@ -1807,11 +1875,11 @@ tr:hover td{background:rgba(243,235,221,.4)}
     modal('New order', 'Packs are taken from kitchen stock when you save.', form('f-order',
       '<div class="row">' + field('Customer name', input('customer', { ph: 'Name', req: true })) + field('Phone', input('phone', { ph: '04xx xxx xxx' })) + '</div>' +
       '<div class="row">' + field('Suburb / pickup', input('suburb', { ph: 'e.g. Lakemba or Pickup' })) + field('Delivery date', input('date', { type: 'date', value: today() })) + '</div>' +
+      '<div class="row">' + field('Pickup time (optional)', input('time', { type: 'time' })) + field('Note (optional)', input('note', { ph: 'e.g. no chili' })) + '</div>' +
       '<div class="field"><label>Items</label><div class="items-list" id="items">' + orderItemRow() + '</div><button type="button" class="btn btn--sm" style="margin-top:8px" data-act="item-add">' + icon('plus', 14) + 'Add another item</button></div>' +
       '<div class="total-line"><span>Total</span><span id="order-total">$0.00</span></div>' +
       '<label class="check"><input type="checkbox" name="paid" data-act="paid-toggle"> Already paid</label>' +
       '<div class="hidden" id="paid-when">' + field('Paid with', select('pay', [['PayID', 'PayID'], ['Bank transfer', 'Bank transfer'], ['Cash', 'Cash']])) + '</div>' +
-      field('Note (optional)', input('note', { ph: 'e.g. no chili' })) +
       foot('Save order', 'order-save')), true);
     updateOrderTotal();
   }
@@ -1948,7 +2016,7 @@ tr:hover td{background:rgba(243,235,221,.4)}
       items.forEach(function (i) { product(i.product_id).kitchen -= i.qty; });
       var total = items.reduce(function (a, i) { return a + i.price * i.qty; }, 0);
       var ref = 'ORD-' + String(db.seq.order++).padStart(3, '0');
-      db.orders.push({ id: uid(), ref: ref, customer: v.customer.trim(), phone: v.phone.trim(), suburb: v.suburb.trim(), date: v.date || today(), items: items, packs: items.reduce(function (a, i) { return a + i.qty; }, 0), total: Math.round(total * 100) / 100, paid: !!v.paid, pay: v.paid ? (v.pay || 'Paid') : '', status: 'open', note: v.note.trim(), created: new Date().toISOString() });
+      db.orders.push({ id: uid(), ref: ref, customer: v.customer.trim(), phone: v.phone.trim(), suburb: v.suburb.trim(), date: v.date || today(), items: items, packs: items.reduce(function (a, i) { return a + i.qty; }, 0), total: Math.round(total * 100) / 100, time: v.time || '', paid: !!v.paid, pay: v.paid ? (v.pay || 'Paid') : '', status: 'open', note: v.note.trim(), created: new Date().toISOString() });
       ui.orderFilter = 'open';
       save(); closeModal(); render(); toast('Order ' + ref + ' saved'); mkHop('Order saved.');
     },

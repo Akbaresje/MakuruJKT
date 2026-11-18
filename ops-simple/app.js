@@ -259,6 +259,20 @@
   function money(n) { return '$' + (Number(n) || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function num(n) { var v = Number(n) || 0; return v % 1 === 0 ? String(v) : v.toFixed(2).replace(/0+$/, '').replace(/\.$/, ''); }
   function today() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  /* "14:30" -> "2:30 pm"; anything else is shown as typed */
+  function fmtTime(t) {
+    if (!t) return '';
+    var p = String(t).split(':'); if (p.length < 2) return t;
+    var h = Number(p[0]), m = Number(p[1]); if (isNaN(h) || isNaN(m)) return t;
+    var ap = h >= 12 ? 'pm' : 'am';
+    var h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ':' + (m < 10 ? '0' + m : m) + ' ' + ap;
+  }
+  /* date cell: the date, with the pickup time underneath when there is one */
+  function whenCell(o) {
+    var t = fmtTime(o.time);
+    return fmtDate(o.date) + (t ? '<div class="td-sub">' + t + '</div>' : '');
+  }
   function fmtDate(iso) {
     if (!iso) return '-';
     var p = iso.split('-'); if (p.length < 3) return iso;
@@ -661,7 +675,7 @@
       '</tbody></table></div>' : emptyBox('No products', 'Add a dimsum product to start tracking stock.', 'Add product', 'product-modal'),
       '<button class="btn btn--sm" data-act="go" data-to="stock">Open</button>');
     html += panel('Open orders', 'Not delivered yet', openOrders.length ? '<div class="tbl-wrap"><table><thead><tr><th>Ref</th><th>Customer</th><th>Delivery</th><th class="num">Total</th></tr></thead><tbody>' +
-      openOrders.slice(0, 8).map(function (o) { return '<tr><td class="td-main">' + esc(o.ref) + '</td><td>' + esc(o.customer) + '<div class="td-sub">' + esc(o.suburb) + '</div></td><td>' + fmtDate(o.date) + '</td><td class="num">' + money(o.total) + '</td></tr>'; }).join('') +
+      openOrders.slice(0, 8).map(function (o) { return '<tr><td class="td-main">' + esc(o.ref) + '</td><td>' + esc(o.customer) + '<div class="td-sub">' + esc(o.suburb) + '</div></td><td>' + whenCell(o) + '</td><td class="num">' + money(o.total) + '</td></tr>'; }).join('') +
       '</tbody></table></div>' : emptyBox('No open orders', 'New orders will show here.', 'New order', 'order-modal'),
       '<button class="btn btn--sm" data-act="go" data-to="orders">Open</button>');
     html += '</div>';
@@ -761,10 +775,10 @@
       stat('Total sales', money(totalSales), 'Paid orders + shop sales', false, { n: totalSales, k: 'money' }) +
       '</div>';
     var seg = '<div class="seg">' + [['open', 'Open'], ['done', 'Delivered'], ['all', 'All']].map(function (f) { return '<button data-act="order-filter" data-f="' + f[0] + '" class="' + (ui.orderFilter === f[0] ? 'active' : '') + '">' + f[1] + '</button>'; }).join('') + '</div>';
-    html += panel('Order list', '', list.length ? '<div class="tbl-wrap"><table><thead><tr><th>Ref</th><th>Customer</th><th>Delivery</th><th>Items</th><th class="num">Total</th><th>Paid</th><th>Status</th><th class="act">Actions</th></tr></thead><tbody>' +
+    html += panel('Order list', '', list.length ? '<div class="tbl-wrap"><table class="tbl--orders"><thead><tr><th>Ref</th><th>Customer</th><th>Delivery</th><th class="col-items">Items</th><th class="num">Total</th><th>Paid</th><th>Status</th><th class="act">Actions</th></tr></thead><tbody>' +
       list.map(function (o) {
-        return '<tr><td class="td-main">' + esc(o.ref) + '</td><td><div class="td-main">' + esc(o.customer) + '</div><div class="td-sub">' + esc(phoneFmt(o.phone)) + (o.suburb ? ' - ' + esc(o.suburb) : '') + '</div></td><td>' + fmtDate(o.date) + '</td>' +
-          '<td><div class="td-sub" style="margin:0">' + o.items.map(function (i) { return num(i.qty) + ' x ' + esc(i.name); }).join('<br>') + '</div></td>' +
+        return '<tr><td class="td-main">' + esc(o.ref) + '</td><td><div class="td-main">' + esc(o.customer) + '</div><div class="td-sub">' + esc(phoneFmt(o.phone)) + (o.suburb ? ' - ' + esc(o.suburb) : '') + '</div></td><td>' + whenCell(o) + '</td>' +
+          '<td class="col-items"><div class="td-sub" style="margin:0">' + o.items.map(function (i) { return num(i.qty) + ' x ' + esc(i.name); }).join('<br>') + '</div></td>' +
           '<td class="num"><b>' + money(o.total) + '</b></td><td>' + (o.paid ? '<span class="pill ok">Paid' + (o.pay ? ' - ' + esc(o.pay) : '') + '</span>' : '<span class="pill red">Not paid</span>') + '</td>' +
           '<td>' + (o.status === 'delivered' ? '<span class="pill ok">Delivered</span>' : '<span class="pill">Open</span>') + '</td>' +
           /* the next step is always the red button: paid first, delivered only after */
@@ -856,11 +870,11 @@
     modal('New order', 'Packs are taken from kitchen stock when you save.', form('f-order',
       '<div class="row">' + field('Customer name', input('customer', { ph: 'Name', req: true })) + field('Phone', input('phone', { ph: '04xx xxx xxx' })) + '</div>' +
       '<div class="row">' + field('Suburb / pickup', input('suburb', { ph: 'e.g. Lakemba or Pickup' })) + field('Delivery date', input('date', { type: 'date', value: today() })) + '</div>' +
+      '<div class="row">' + field('Pickup time (optional)', input('time', { type: 'time' })) + field('Note (optional)', input('note', { ph: 'e.g. no chili' })) + '</div>' +
       '<div class="field"><label>Items</label><div class="items-list" id="items">' + orderItemRow() + '</div><button type="button" class="btn btn--sm" style="margin-top:8px" data-act="item-add">' + icon('plus', 14) + 'Add another item</button></div>' +
       '<div class="total-line"><span>Total</span><span id="order-total">$0.00</span></div>' +
       '<label class="check"><input type="checkbox" name="paid" data-act="paid-toggle"> Already paid</label>' +
       '<div class="hidden" id="paid-when">' + field('Paid with', select('pay', [['PayID', 'PayID'], ['Bank transfer', 'Bank transfer'], ['Cash', 'Cash']])) + '</div>' +
-      field('Note (optional)', input('note', { ph: 'e.g. no chili' })) +
       foot('Save order', 'order-save')), true);
     updateOrderTotal();
   }
@@ -997,7 +1011,7 @@
       items.forEach(function (i) { product(i.product_id).kitchen -= i.qty; });
       var total = items.reduce(function (a, i) { return a + i.price * i.qty; }, 0);
       var ref = 'ORD-' + String(db.seq.order++).padStart(3, '0');
-      db.orders.push({ id: uid(), ref: ref, customer: v.customer.trim(), phone: v.phone.trim(), suburb: v.suburb.trim(), date: v.date || today(), items: items, packs: items.reduce(function (a, i) { return a + i.qty; }, 0), total: Math.round(total * 100) / 100, paid: !!v.paid, pay: v.paid ? (v.pay || 'Paid') : '', status: 'open', note: v.note.trim(), created: new Date().toISOString() });
+      db.orders.push({ id: uid(), ref: ref, customer: v.customer.trim(), phone: v.phone.trim(), suburb: v.suburb.trim(), date: v.date || today(), items: items, packs: items.reduce(function (a, i) { return a + i.qty; }, 0), total: Math.round(total * 100) / 100, time: v.time || '', paid: !!v.paid, pay: v.paid ? (v.pay || 'Paid') : '', status: 'open', note: v.note.trim(), created: new Date().toISOString() });
       ui.orderFilter = 'open';
       save(); closeModal(); render(); toast('Order ' + ref + ' saved'); mkHop('Order saved.');
     },

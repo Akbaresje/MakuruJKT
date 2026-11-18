@@ -192,8 +192,17 @@
 
 /* ---------- small screens ---------- */
 @media (max-width: 720px) {
-  /* stays small on phones even if a size was set inline */
-  .mk--fixed { right: 14px; bottom: 16px; --mk-max: 88px; }
+  /* stays small on phones even if a size was set inline.
+     It sits bottom-left because the right edge is the sticky action column
+     (Paid / Delivered / Delete): a floating bun there would eat those taps. */
+  .mk--fixed { left: 10px; right: auto; bottom: calc(8px + env(safe-area-inset-bottom)); --mk-max: 58px; }
+  /* decorative on phones: it must never intercept a tap meant for a button
+     underneath it (Paid / Delivered / Delete live in that corner) */
+  .mk--fixed .mk-hit { pointer-events: none; }
+  /* no speech bubble on phones: an 88px-wide card row leaves no free space that
+     a floating bubble can occupy without covering a button. The bun stays, and
+     it still reacts when tapped. */
+  .mk--fixed .mk-bubble { display: none; }
 }
 
 /* ---------- reduced motion: calm, still cute ---------- */

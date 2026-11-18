@@ -28,7 +28,7 @@ svg{display:block;flex:none}
 .hidden{display:none !important}
 
 /* gateway */
-.gateway{position:relative;height:100vh;width:100%;overflow:hidden;display:grid;place-items:center;background:var(--bg);isolation:isolate}
+.gateway{position:relative;height:100vh;height:100dvh;width:100%;overflow:hidden;display:grid;place-items:center;background:var(--bg);isolation:isolate}
 /* a soft warm halo that breathes behind the wordmark */
 .gateway::before{content:"";position:absolute;top:50%;left:50%;width:min(78vw,660px);height:min(78vw,660px);margin:calc(min(78vw,660px) / -2) 0 0 calc(min(78vw,660px) / -2);border-radius:50%;z-index:0;pointer-events:none;
   background:radial-gradient(circle at 50% 50%,rgba(221,161,94,.11) 0%,rgba(221,161,94,.055) 38%,rgba(221,161,94,.02) 58%,rgba(221,161,94,0) 72%);
@@ -288,8 +288,12 @@ tr:hover td{background:rgba(243,235,221,.4)}
 .total-line{display:flex;justify-content:space-between;font-weight:700;padding:10px 0 0;border-top:1px solid var(--line);margin-top:4px}
 
 /* modal */
-.scrim{position:fixed;inset:0;background:rgba(36,30,30,.45);display:grid;place-items:center;padding:20px;z-index:50;animation:fade .15s ease}
-.dialog{border:1px solid var(--glass-line);border-radius:var(--r-pane);width:100%;max-width:520px;max-height:92vh;overflow:auto;
+.scrim{position:fixed;inset:0;background:rgba(36,30,30,.45);display:grid;place-items:center;z-index:50;animation:fade .15s ease;
+  padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom))}
+/* dvh = the height that is actually visible; on phones the browser bar used to
+   swallow the last 90-200px of this box, which hid the submit button */
+.dialog{border:1px solid var(--glass-line);border-radius:var(--r-pane);width:100%;max-width:520px;overflow:auto;
+  max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   background:linear-gradient(162deg,rgba(255,255,255,.96),rgba(255,255,255,.86));
   box-shadow:inset 0 1px 0 #fff,0 40px 80px -34px rgba(36,30,30,.42);animation:pop .18s ease}
 .dialog--wide{max-width:680px}
@@ -297,13 +301,18 @@ tr:hover td{background:rgba(243,235,221,.4)}
 .dialog-head h3{font-size:18px;font-weight:700}
 .dialog-head p{color:var(--muted);font-size:13px;margin-top:2px}
 .dialog-body{padding:18px 22px 22px}
+/* the action row sticks to the bottom of the sheet: Cancel / Save are always reachable,
+   even when the form is taller than the phone screen */
+.form-foot{position:sticky;bottom:0;margin:14px -22px -22px;padding:12px 22px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.97) 42%);
+  border-top:1px solid rgba(36,30,30,.07);z-index:1}
 .close{width:32px;height:32px;border-radius:9999px;display:grid;place-items:center;color:var(--muted);transition:background .18s,transform .28s cubic-bezier(.2,.8,.25,1)}
 .close:hover{transform:rotate(90deg)}
 .close:hover{background:var(--alt)}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
 
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:9999px;font-size:13px;font-weight:600;z-index:60;animation:fade .2s ease;white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:9999px;font-size:13px;font-weight:600;z-index:60;animation:fade .2s ease;white-space:nowrap}
 .toast.err{background:var(--red)}
 
 @media (max-width:980px){
@@ -318,14 +327,50 @@ tr:hover td{background:rgba(243,235,221,.4)}
   .side-foot{margin-top:0;flex-direction:row;margin-left:auto}
   .side-note{display:none}
   .nav.small span{display:none}
-  .main{padding:18px 16px 60px}
+  .main{padding:18px 16px calc(60px + env(safe-area-inset-bottom))}
   .row,.row-3{grid-template-columns:1fr}
   .shop-grid{grid-template-columns:1fr}
+  /* iOS zooms the whole page when a focused field is under 16px */
+  .input,select.input,textarea.input,.login-pin{font-size:16px}
+  /* thumbs, not cursors: every tappable row action gets a real target */
+  .btn{padding:11px 16px}
+  .btn--sm{padding:9px 12px;font-size:12.5px;min-height:38px}
+  .seg{padding:3px}
+  .seg button{padding:8px 14px;min-height:34px}
+  .td.act .btn{margin-left:6px}
+  .td.act .btn:last-child{margin-left:0}
+  .nav{padding:10px 12px}
+  /* the sheet is a bottom sheet on phones: title stays, actions stay, the middle scrolls */
+  .scrim{padding:8px}
+  .dialog{max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);border-radius:20px}
+  .dialog-head{padding:16px 18px 12px;position:sticky;top:0;background:rgba(255,255,255,.96);z-index:2}
+  .dialog-body{padding:14px 18px 18px}
+  .form-foot{bottom:0;margin:12px -18px -18px;padding:12px 18px calc(12px + env(safe-area-inset-bottom))}
+  .form-foot .btn{flex:1;justify-content:center}
+  .toast{white-space:normal;max-width:calc(100vw - 32px);text-align:center}
 }
 @media (max-width:560px){
   .stats{grid-template-columns:1fr 1fr}
   .stat .value{font-size:26px}
   .page-head h1{font-size:24px}
+  /* orders become cards on a phone: seven columns never fit 390px, and a sideways
+     scroll hides the very buttons you came for */
+  .tbl--orders thead{display:none}
+  .tbl--orders,.tbl--orders tbody,.tbl--orders tr,.tbl--orders td{display:block;width:auto}
+  .tbl--orders tr{display:grid;grid-template-columns:1fr auto;gap:6px 10px;padding:14px 16px;border-top:1px solid rgba(36,30,30,.07)}
+  .tbl--orders tr:first-child{border-top:0}
+  .tbl--orders td{padding:0;border:0;background:none}
+  .tbl--orders tr:hover{background:transparent}
+  .tbl--orders td:nth-child(1){grid-area:1/1;font-weight:700;white-space:nowrap;color:var(--red)}
+  .tbl--orders td:nth-child(5){grid-area:1/2;text-align:right;font-family:var(--display);font-size:16px}
+  .tbl--orders td:nth-child(2){grid-area:2/1/3/3}
+  .tbl--orders td:nth-child(3){grid-area:3/1;font-size:12.5px;color:var(--muted)}
+  .tbl--orders td:nth-child(6){grid-area:4/1;align-self:center}
+  .tbl--orders td:nth-child(7){grid-area:4/2;justify-self:end;align-self:center}
+  .tbl--orders td:nth-child(8){grid-area:5/1/6/3;display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+  .tbl--orders td:nth-child(8) .btn{flex:1;justify-content:center;min-height:40px}
+  .tbl--orders .td-sub{font-size:12.5px}
+  .col-items{display:none}
 }
 .shop-grid .panel{display:flex;flex-direction:column}
 .shop-grid .panel > .tbl-wrap,.shop-grid .panel > .empty{flex:1}

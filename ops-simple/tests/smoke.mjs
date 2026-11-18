@@ -106,20 +106,36 @@ click('[data-act="order-filter"][data-f="done"]'); await wait();
 ok(/ORD-001/.test(text()), 'delivered filter shows order');
 ok(!q('[data-act="order-deliver"]'), 'a delivered order offers no Delivered button');
 
-/* an order created as already paid records a real method, not the word Paid */
+/* pickup time */
 click('[data-act="order-filter"][data-f="open"]'); await wait();
+click('[data-act="order-modal"]'); await wait();
+set('#f-order [name=customer]', 'Sari');
+set('#f-order [name=time]', '18:45');
+q('.order-item input').value = 1;
+click('[data-act="order-save"]'); await wait();
+const withTime = db().orders.find(o => o.customer === 'Sari');
+ok(withTime && withTime.time === '18:45', 'pickup time is saved with the order');
+ok(/6:45 pm/.test(text()), 'pickup time shows next to the date as 6:45 pm');
+ok(!!q('#f-order') === false, 'the form closed after saving');
+ok(!q('#paid-when') || q('#paid-when').classList.contains('hidden'), 'payment method stays hidden while unpaid');
+
+/* an order created as already paid records a real method, not the word Paid */
 click('[data-act="order-modal"]'); await wait();
 set('#f-order [name=customer]', 'Budi Santoso');
 q('#f-order [name=paid]').click(); await wait();
 ok(!q('#paid-when').classList.contains('hidden'), 'choosing Already paid reveals the payment method');
 const method = q('#paid-when select'); if (method) method.value = 'Bank transfer';
 click('[data-act="order-save"]'); await wait();
-ok(db().orders[1].paid && db().orders[1].pay === 'Bank transfer', 'already paid order keeps its payment method');
+const budi = db().orders.find(o => o.customer === 'Budi Santoso');
+ok(budi && budi.paid && budi.pay === 'Bank transfer', 'already paid order keeps its payment method');
 ok(!/Paid - Paid/.test(text()), 'no duplicated Paid label');
 click('[data-act="order-filter"][data-f="all"]'); await wait();
+const before = db().orders.length;
 click('[data-act="order-del-ask"]'); await wait(); click('[data-act="order-del"]'); await wait();
-ok(db().orders.length === 1, 'first order deleted');
-click('[data-act="order-del-ask"]'); await wait(); click('[data-act="order-del"]'); await wait();
+ok(db().orders.length === before - 1, 'first order deleted');
+while (db().orders.length) {
+  click('[data-act="order-del-ask"]'); await wait(); click('[data-act="order-del"]'); await wait();
+}
 ok(db().orders.length === 0, 'order deleted');
 
 // deletes
