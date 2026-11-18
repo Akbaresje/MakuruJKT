@@ -242,11 +242,16 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 14px;white-space:nowrap;
   background:linear-gradient(180deg,rgba(243,235,221,.92),rgba(243,235,221,.62))}
 td{padding:12px 14px;border-top:1px solid rgba(36,30,30,.06);vertical-align:middle}
-tbody tr{transition:background .2s}tbody tr:hover{background:rgba(243,235,221,.34)}
+tbody tr{transition:background .2s}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 td.act,th.act{text-align:right;white-space:nowrap}
 td.act .btn{margin-left:4px}
-tr:hover td{background:rgba(243,235,221,.4)}
+/* hover is a pointer luxury: on a touch screen the state sticks to the last
+   tapped row, and in card mode that paints a tan block behind every cell */
+@media (hover:hover){
+  tbody tr:hover{background:rgba(243,235,221,.34)}
+  tr:hover td{background:rgba(243,235,221,.4)}
+}
 .td-main{font-weight:600}
 .td-sub{font-size:12px;color:var(--muted);margin-top:2px}
 .empty{padding:40px 20px;text-align:center;color:var(--muted)}
@@ -364,7 +369,7 @@ tr:hover td{background:rgba(243,235,221,.4)}
   .tbl--orders,.tbl--orders tbody,.tbl--orders tr,.tbl--orders td{display:block;width:auto}
   .tbl--orders tr{display:grid;grid-template-columns:1fr auto;gap:6px 10px;padding:14px 16px;border-top:1px solid rgba(36,30,30,.07)}
   .tbl--orders tr:first-child{border-top:0}
-  .tbl--orders td{padding:0;border:0;background:none}
+  .tbl--orders tr td{padding:0;border:0;background:none}
   .tbl--orders tr:hover{background:transparent}
   .tbl--orders td:nth-child(1){grid-area:1/1;font-weight:700;white-space:nowrap;color:var(--red)}
   .tbl--orders td:nth-child(5){grid-area:1/2;text-align:right;font-family:var(--display);font-size:16px}
